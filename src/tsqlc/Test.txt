@@ -1,0 +1,14 @@
+﻿
+use test
+
+go
+
+;with cte AS (
+  select *, 12 as Test from tb_test where name = 'hello' and age > 18
+)
+select * from cte;
+
+declare @tab table (
+  Name nvarchar(max) not null,
+  Age int null
+) ON [PRIMARY] WITH(PAD_INDEX=ON)
