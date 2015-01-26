@@ -22,7 +22,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/ 
+*/
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -236,7 +236,7 @@ namespace tsqlc
       {
         if (_look == '\'' && Peek() == '\'')
           Next();
-        else if(_look == '\'')
+        else if (_look == '\'')
           break;
 
         StashLook();
@@ -309,63 +309,105 @@ namespace tsqlc
         case '+':
           Next();
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.AddAssignOp);
+          }
           return MakeToken(TokenType.AddOp);
         case '-':
           Next();
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.SubtractAssignOp);
+          }
           return MakeToken(TokenType.SubtractOp);
         case '*':
           Next();
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.StarAssignOp);
+          }
           return MakeToken(TokenType.StarOp);
         case '/':
           Next();
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.DivideAssignOp);
+          }
           return MakeToken(TokenType.DivideOp);
         case '%':
           Next();
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.ModuloAssignOp);
+          }
           return MakeToken(TokenType.ModuloOp);
         case '&':
           Next();
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.BitwiseAndAssignOp);
+          }
           return MakeToken(TokenType.BitwiseAndOp);
         case '^':
           Next();
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.BitwiseNotAssignOp);
+          }
           return MakeToken(TokenType.BitwiseNotOp);
         case '|':
           Next();
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.BitwiseOrAssignOp);
+          }
           return MakeToken(TokenType.BitwiseOrOp);
         case '<':
           Next();
           if (_look == '>')
+          {
+            Next();
             return MakeToken(TokenType.AnsiNotEqualOp);
+          }
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.LessThanOrEqualOp);
+          }
           return MakeToken(TokenType.LessThanOp);
         case '>':
           Next();
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.GreaterThanOrEqualOp);
+          }
           return MakeToken(TokenType.GreaterThanOp);
         case '!':
           Next();
           if (_look == '<')
+          {
+            Next();
             return MakeToken(TokenType.NotLessThanOp);
+          }
           if (_look == '>')
+          {
+            Next();
             return MakeToken(TokenType.NotGreaterThanOp);
+          }
           if (_look == '=')
+          {
+            Next();
             return MakeToken(TokenType.MsNotEqualOp);
+          }
           throw MakeError('=');
         case '=':
           Next();
