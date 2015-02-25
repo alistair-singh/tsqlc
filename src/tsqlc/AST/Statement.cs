@@ -23,51 +23,9 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using tsqlc.Parse;
-using tsqlc.Util;
-
-namespace tsqlc
+namespace tsqlc.AST
 {
-  class Program
+  public class Statement
   {
-    static void Main(string[] args)
-    {
-      using (Benchmark.Start("*"))
-      {
-        const string testFilePath = @"Test.txt";
-
-        using (var stream = new FileStream(testFilePath, FileMode.Open, FileAccess.Read))
-        using (var reader = new StreamReader(stream))
-        {
-          try
-          {
-
-            var tokens = new Lexer(reader).ToArray();
-            var parser = new Parser(tokens);
-            foreach (var statements in parser.Parse())
-            {
-              Console.WriteLine(statements);
-            }
-          }
-          catch (Exception ex)
-          {
-            var current = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine(ex.Message);
-            Console.ForegroundColor = current;
-          }
-        }
-      }
-      Console.ReadKey(true);
-    }
   }
 }

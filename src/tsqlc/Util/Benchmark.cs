@@ -23,50 +23,38 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */ 
-namespace tsqlc
+using System;
+using System.Diagnostics;
+using System.Threading;
+
+namespace tsqlc.Util
 {
-  public class Token
+  public class Benchmark : IDisposable
   {
-    public int Line { get; set; }
-    public int Column { get; set; }
-    public TokenType Type { get; set; }
-    public string Character { get; set; }
-    public int Int { get; set; }
-    public long BigInt { get; set; }
-    public decimal Numeric { get; set; }
-    public double Real { get; set; }
+    private static int InstanceID = 0;
 
-    public override string ToString()
+    private Stopwatch _watch;
+    private string _name;
+    private int _id;
+
+    private Benchmark(string name)
     {
-      object obj = null;
-      switch (Type)
-      {
-        case TokenType.IntConstant:
-          obj = Int;
-          break;
-        case TokenType.BigIntConstant:
-          obj = BigInt;
-          break;
-        case TokenType.RealConstant:
-        case TokenType.FloatConstant:
-          obj = Real;
-          break;
-        case TokenType.NumericConstant:
-          obj = Numeric;
-          break;
-        case TokenType.Identifier:
-        case TokenType.BlockComment:
-        case TokenType.LineComment:
-          obj = Character;
-          break;
-        case TokenType.NvarcharConstant:
-        case TokenType.VarcharConstant:
-          obj = string.Format("\'{0}\'", Character.Replace("\'", "\'\'"));
-          break;
-      }
+      _name = name;
+      _watch = new Stopwatch();
+      _id = Interlocked.Increment(ref InstanceID);
+      Console.WriteLine("{0}:{1} starting", _name, _id);
+      _watch.Start();
+    }
 
-      var value = obj == null ? string.Empty : string.Format(" => {0}", obj);
-      return string.Format("Token {0},{1} - {2}{3}", Line, Column, Type, value);
+    public static IDisposable Start(string name)
+    {
+      return new Benchmark(name);
+    }
+
+    public void Dispose()
+    {
+      _watch.Stop();
+      Console.WriteLine("{0}:{1} completed -> {2}ms", _name, _id, _watch.ElapsedMilliseconds);
     }
   }
 }

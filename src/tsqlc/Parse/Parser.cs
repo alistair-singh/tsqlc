@@ -1,4 +1,5 @@
-﻿/*
+﻿using System;
+/*
 Copyright (c) 2015, Alistair Singh
 All rights reserved.
 
@@ -22,39 +23,41 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/ 
-using System;
-using System.Diagnostics;
-using System.Threading;
+*/
+using System.Collections.Generic;
+using System.Linq;
+using tsqlc.AST;
 
-namespace tsqlc
+namespace tsqlc.Parse
 {
-  public class Benchmark : IDisposable
+  public class Parser
   {
-    private static int InstanceID = 0;
+    private readonly IEnumerator<Token> _tokens;
 
-    private Stopwatch _watch;
-    private string _name;
-    private int _id;
-
-    private Benchmark(string name)
+    public Parser(IEnumerable<Token> tokens)
     {
-      _name = name;
-      _watch = new Stopwatch();
-      _id = Interlocked.Increment(ref InstanceID);
-      Console.WriteLine("{0}:{1} starting", _name, _id);
-      _watch.Start();
+      _tokens = tokens.GetEnumerator();
     }
 
-    public static IDisposable Start(string name)
+    public IEnumerable<Statement> Parse()
     {
-      return new Benchmark(name);
+      while(_tokens.MoveNext())
+      {
+        var token = _tokens.Current;
+
+        if(token.Type == TokenType.K_SELECT)
+        {
+          yield return Select();
+          continue;
+        }
+
+        throw new Exception(string.Format("`{0}` unexpected at line {1} char {2}.", token.Type, token.Line, token.Column));
+      }
     }
 
-    public void Dispose()
+    private Statement Select()
     {
-      _watch.Stop();
-      Console.WriteLine("{0}:{1} completed -> {2}ms", _name, _id, _watch.ElapsedMilliseconds);
+      return new Statement();
     }
   }
 }

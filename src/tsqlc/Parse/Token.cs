@@ -22,52 +22,51 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using tsqlc.Parse;
-using tsqlc.Util;
-
-namespace tsqlc
+*/ 
+namespace tsqlc.Parse
 {
-  class Program
+  public class Token
   {
-    static void Main(string[] args)
+    public int Line { get; set; }
+    public int Column { get; set; }
+    public TokenType Type { get; set; }
+    public string Character { get; set; }
+    public int Int { get; set; }
+    public long BigInt { get; set; }
+    public decimal Numeric { get; set; }
+    public double Real { get; set; }
+
+    public override string ToString()
     {
-      using (Benchmark.Start("*"))
+      object obj = null;
+      switch (Type)
       {
-        const string testFilePath = @"Test.txt";
-
-        using (var stream = new FileStream(testFilePath, FileMode.Open, FileAccess.Read))
-        using (var reader = new StreamReader(stream))
-        {
-          try
-          {
-
-            var tokens = new Lexer(reader).ToArray();
-            var parser = new Parser(tokens);
-            foreach (var statements in parser.Parse())
-            {
-              Console.WriteLine(statements);
-            }
-          }
-          catch (Exception ex)
-          {
-            var current = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine(ex.Message);
-            Console.ForegroundColor = current;
-          }
-        }
+        case TokenType.IntConstant:
+          obj = Int;
+          break;
+        case TokenType.BigIntConstant:
+          obj = BigInt;
+          break;
+        case TokenType.RealConstant:
+        case TokenType.FloatConstant:
+          obj = Real;
+          break;
+        case TokenType.NumericConstant:
+          obj = Numeric;
+          break;
+        case TokenType.Identifier:
+        case TokenType.BlockComment:
+        case TokenType.LineComment:
+          obj = Character;
+          break;
+        case TokenType.NvarcharConstant:
+        case TokenType.VarcharConstant:
+          obj = string.Format("\'{0}\'", Character.Replace("\'", "\'\'"));
+          break;
       }
-      Console.ReadKey(true);
+
+      var value = obj == null ? string.Empty : string.Format(" => {0}", obj);
+      return string.Format("Token {0},{1} - {2}{3}", Line, Column, Type, value);
     }
   }
 }

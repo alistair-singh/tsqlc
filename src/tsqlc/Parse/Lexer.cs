@@ -33,7 +33,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace tsqlc
+namespace tsqlc.Parse
 {
   public class Lexer : IEnumerable<Token>
   {

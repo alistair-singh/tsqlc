@@ -29,7 +29,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace tsqlc
+namespace tsqlc.Parse
 {
   public class Keyword
   {
@@ -117,6 +117,7 @@ namespace tsqlc
       {"FROM",TokenType.K_FROM},
       {"FULL",TokenType.K_FULL},
       {"FUNCTION",TokenType.K_FUNCTION},
+      {"GO",TokenType.K_GO},
       {"GOTO",TokenType.K_GOTO},
       {"GRANT",TokenType.K_GRANT},
       {"GROUP",TokenType.K_GROUP},
