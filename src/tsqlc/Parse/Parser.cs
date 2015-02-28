@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 /*
 Copyright (c) 2015, Alistair Singh
 All rights reserved.
@@ -30,7 +31,7 @@ using tsqlc.AST;
 
 namespace tsqlc.Parse
 {
-  public class Parser
+  public class Parser : IEnumerable<Statement>
   {
     private readonly IEnumerator<Token> _tokens;
 
@@ -39,25 +40,158 @@ namespace tsqlc.Parse
       _tokens = tokens.GetEnumerator();
     }
 
-    public IEnumerable<Statement> Parse()
+    private Token Next()
     {
-      while(_tokens.MoveNext())
+      if (_tokens.MoveNext())
+        return _tokens.Current;
+      return new Token { Type = TokenType.EndOfFile };
+    }
+
+    private Token Last()
+    {
+      return _tokens.Current;
+    }
+
+    public Statement NextStatement()
+    {
+      var token = Next();
+      switch (token.Type)
       {
-        var token = _tokens.Current;
-
-        if(token.Type == TokenType.K_SELECT)
-        {
-          yield return Select();
-          continue;
-        }
-
-        throw new Exception(string.Format("`{0}` unexpected at line {1} char {2}.", token.Type, token.Line, token.Column));
+        case TokenType.EndOfFile:
+          return null;
+        case TokenType.K_SELECT:
+          return Select();
+        default:
+          throw Unexpected(token);
       }
     }
 
     private Statement Select()
     {
-      return new SelectStatement();
+      var columns = new List<Column>();
+      Token token;
+      do
+      {
+        token = Next();
+        switch (token.Type)
+        {
+          case TokenType.StarOp:
+            columns.Add(new StarColumn { TableAlias = "*" });
+            token = Next();
+            break;
+          case TokenType.VarcharConstant:
+          case TokenType.Identifier:
+            var first = token;
+            token = Next();
+            if (token.Type == TokenType.AssignOp)
+            {
+              columns.Add(ColumnExpression(first.Character));
+              token = Next();
+            }
+            else if (token.Type == TokenType.Comma)
+            {
+              columns.Add(ColumnExpression(first.Character));
+              continue;
+            }
+            else
+            {
+              columns.Add(ColumnExpression(first));
+              token = Next();
+            }
+            break;
+          default:
+            throw Unexpected(token);
+        }
+      } while (token.Type == TokenType.Comma);
+
+      return new SelectStatement { Columns = columns };
     }
+
+    private Column ColumnExpression(string alias)
+    {
+      return new ExpressionColumn { Alias = alias, Expression = Expression() };
+    }
+
+    private Column ColumnExpression(Token first)
+    {
+      var column = new ExpressionColumn { Expression = Expression(first) };
+      var token = Last();
+      if (token.Type == TokenType.K_AS)
+        token = Next();
+
+      switch (token.Type)
+      {
+        case TokenType.VarcharConstant:
+        case TokenType.Identifier:
+          column.Alias = token.Character;
+          break;
+        default:
+          throw Unexpected(token);
+      }
+      return column;
+    }
+
+    private Expression Expression(Token first = null)
+    {
+      //if (first == null)
+      //  first = Next();
+
+      return new Expression();
+    }
+
+    private Exception Unexpected(Token token)
+    {
+      return new Exception(string.Format("`{0}` unexpected at line {1} char {2}.", token.Type, token.Line, token.Column));
+    }
+
+    #region IEnumerator<Statement>
+
+    public IEnumerator<Statement> GetEnumerator()
+    {
+      return new Parser.StatementEnumerator(this);
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+      return this.GetEnumerator();
+    }
+
+    #endregion
+
+    #region StatementEnumerator
+
+    private class StatementEnumerator : IEnumerator<Statement>
+    {
+      private Parser _parser;
+
+      public StatementEnumerator(Parser parser)
+      {
+        _parser = parser;
+      }
+
+      public Statement Current { get; private set; }
+
+      public void Dispose() { }
+
+      object IEnumerator.Current
+      {
+        get { return Current; }
+      }
+
+      public bool MoveNext()
+      {
+        var statement = _parser.NextStatement();
+        if (statement != null)
+        {
+          Current = statement;
+          return true;
+        }
+        return false;
+      }
+
+      public void Reset() { }
+    }
+
+    #endregion
   }
 }

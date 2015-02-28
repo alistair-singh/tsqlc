@@ -518,8 +518,13 @@ namespace tsqlc.Parse
 
       public bool MoveNext()
       {
-        Current = _lexer.NextToken();
-        return Current.Type != TokenType.EndOfFile;
+        var token = _lexer.NextToken();
+        if (token.Type != TokenType.EndOfFile)
+        {
+          Current = token;
+          return true;
+        }
+        return false;
       }
 
       public void Reset() { }

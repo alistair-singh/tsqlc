@@ -48,21 +48,21 @@ namespace tsqlc
         try
         {
           var tokens = new Token[0];
+          Console.WriteLine("=== token ===");
           using (Benchmark.Start("lexer"))
           {
             tokens = new Lexer(text).ToArray();
-            Console.WriteLine("=== token ===");
             foreach (var token in tokens)
             {
               Console.WriteLine(token);
             }
           }
 
+          Console.WriteLine("=== statements ===");
           using (Benchmark.Start("parser"))
           {
             var parser = new Parser(tokens);
-            Console.WriteLine("=== statements ===");
-            foreach (var statements in parser.Parse())
+            foreach (var statements in parser)
             {
               Console.WriteLine(statements);
             }

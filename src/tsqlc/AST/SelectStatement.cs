@@ -8,6 +8,6 @@ namespace tsqlc.AST
 {
   public class SelectStatement : Statement
   {
-    ICollection<Column> Columns { get; set; }
+    public ICollection<Column> Columns { get; set; }
   }
 }
