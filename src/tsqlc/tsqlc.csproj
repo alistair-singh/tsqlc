@@ -41,7 +41,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AST\Column.cs" />
+    <Compile Include="AST\Expression.cs" />
     <Compile Include="AST\Statement.cs" />
+    <Compile Include="AST\SelectStatement.cs" />
     <Compile Include="Util\Benchmark.cs" />
     <Compile Include="Parse\Parser.cs" />
     <Compile Include="Parse\Keyword.cs" />

@@ -44,27 +44,36 @@ namespace tsqlc
       using (Benchmark.Start("*"))
       {
         const string testFilePath = @"Test.txt";
-
-        using (var stream = new FileStream(testFilePath, FileMode.Open, FileAccess.Read))
-        using (var reader = new StreamReader(stream))
+        var text = File.ReadAllText(testFilePath);
+        try
         {
-          try
+          var tokens = new Token[0];
+          using (Benchmark.Start("lexer"))
           {
+            tokens = new Lexer(text).ToArray();
+            Console.WriteLine("=== token ===");
+            foreach (var token in tokens)
+            {
+              Console.WriteLine(token);
+            }
+          }
 
-            var tokens = new Lexer(reader).ToArray();
+          using (Benchmark.Start("parser"))
+          {
             var parser = new Parser(tokens);
+            Console.WriteLine("=== statements ===");
             foreach (var statements in parser.Parse())
             {
               Console.WriteLine(statements);
             }
           }
-          catch (Exception ex)
-          {
-            var current = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine(ex.Message);
-            Console.ForegroundColor = current;
-          }
+        }
+        catch (Exception ex)
+        {
+          var current = Console.ForegroundColor;
+          Console.ForegroundColor = ConsoleColor.Red;
+          Console.WriteLine(ex.Message);
+          Console.ForegroundColor = current;
         }
       }
       Console.ReadKey(true);

@@ -57,7 +57,7 @@ namespace tsqlc.Parse
 
     private Statement Select()
     {
-      return new Statement();
+      return new SelectStatement();
     }
   }
 }

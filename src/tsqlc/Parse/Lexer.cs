@@ -41,18 +41,18 @@ namespace tsqlc.Parse
     private char _peek;
     private int _col;
     private int _line;
-    private StringBuilder _builder;
-    private StreamReader _reader;
+    private readonly StringBuilder _builder;
+    private readonly IEnumerator<char> _enumerator;
 
     private int _tokenLine;
     private int _tokenCol;
 
-    public Lexer(StreamReader reader)
+    public Lexer(IEnumerable<char> characters)
     {
       _col = 0;
       _line = 1;
       _builder = new StringBuilder();
-      _reader = reader;
+      _enumerator = characters.GetEnumerator();
       _peek = '\0';
 
       Next();
@@ -99,6 +99,13 @@ namespace tsqlc.Parse
       throw new Exception("Unexpect char " + _look);
     }
 
+    private char Read()
+    {
+      if (_enumerator.MoveNext())
+        return _enumerator.Current;
+      return '\0';
+    }
+
     private void Next()
     {
       if (_peek != '\0')
@@ -107,15 +114,7 @@ namespace tsqlc.Parse
         _peek = '\0';
       }
       else
-      {
-        var val = _reader.Read();
-        if (val == -1)
-        {
-          _look = '\0';
-          return;
-        }
-        _look = (char)val;
-      }
+        _look = Read();
 
       if (_look == '\n')
       {
@@ -129,13 +128,7 @@ namespace tsqlc.Parse
     private char Peek()
     {
       Debug.Assert(_peek == '\0', "Double peek detected");
-
-      var val = _reader.Read();
-      if (val == -1)
-        return '\0';
-
-      _peek = (char)val;
-      return _peek;
+      return (_peek = Read());
     }
 
     private void SkipWhitespace()

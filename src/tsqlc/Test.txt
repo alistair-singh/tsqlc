@@ -1,2 +1,3 @@
 ﻿
-select * from tablename
+select *, 's' AS T, 'b', 2, name, acs.name NewName
+select 1 as num,  num = 23
