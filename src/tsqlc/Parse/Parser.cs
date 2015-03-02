@@ -60,113 +60,158 @@ namespace tsqlc.Parse
   {
     private readonly IEnumerator<Token> _tokens;
 
+    private Token Current { get { return _tokens.Current; } }
+
     public Parser(IEnumerable<Token> tokens)
     {
-      _tokens = tokens.GetEnumerator();
-    }
-
-    private Token Next()
-    {
-      if (_tokens.MoveNext())
-        return _tokens.Current;
-      return new Token { Type = TokenType.EndOfFile };
-    }
-
-    private Token Last()
-    {
-      return _tokens.Current;
+      // Not interested in comments
+      _tokens = tokens.Where(x => x.Type != TokenType.LineComment &&
+        x.Type != TokenType.BlockComment).GetEnumerator();
     }
 
     public Statement NextStatement()
     {
-      var token = Next();
-      switch (token.Type)
+      if(Current ==  null && !_tokens.MoveNext())
+        return null;
+
+      switch (Current.Type)
       {
-        case TokenType.EndOfFile:
-          return null;
-        case TokenType.K_SELECT:
-          return Select();
         default:
-          throw Unexpected(token);
+          return new SelectStatement { Columns = new List<Column>() { new ExpressionColumn { Expression = Expression() } } };
       }
     }
 
-    private Statement Select()
+    private Expression Expression()
     {
-      var columns = new List<Column>();
-      Token token;
-      do
+      if (IsConstant())
+        return Constant();
+      if (IsUnaryOp())
+        return UnaryOp();
+      if (IsReference())
+        return ReferenceExpression();
+      if(Current.Type == TokenType.OpenBracket)
       {
-        token = Next();
-        switch (token.Type)
-        {
-          case TokenType.StarOp:
-            columns.Add(new StarColumn { TableAlias = "*" });
-            token = Next();
-            break;
-          case TokenType.VarcharConstant:
-          case TokenType.Identifier:
-            var first = token;
-            token = Next();
-            if (token.Type == TokenType.AssignOp)
-            {
-              columns.Add(ColumnExpression(first.Character));
-              token = Next();
-            }
-            else if (token.Type == TokenType.Comma)
-            {
-              columns.Add(ColumnExpression(first.Character));
-              continue;
-            }
-            else
-            {
-              columns.Add(ColumnExpression(first));
-              token = Next();
-            }
-            break;
-          default:
-            throw Unexpected(token);
-        }
-      } while (token.Type == TokenType.Comma);
-
-      return new SelectStatement { Columns = columns };
-    }
-
-    private Column ColumnExpression(string alias)
-    {
-      return new ExpressionColumn { Alias = alias, Expression = Expression() };
-    }
-
-    private Column ColumnExpression(Token first)
-    {
-      var column = new ExpressionColumn { Expression = Expression(first) };
-      var token = Last();
-      if (token.Type == TokenType.K_AS)
-        token = Next();
-
-      switch (token.Type)
-      {
-        case TokenType.VarcharConstant:
-        case TokenType.Identifier:
-          column.Alias = token.Character;
-          break;
-        default:
-          throw Unexpected(token);
+        Next();
+        var expression = Expression();
+        if (Current.Type != TokenType.CloseBracket)
+          throw Expected(")");
+        Next();
+        return expression;
       }
-      return column;
-    }
-
-    private Expression Expression(Token first = null)
-    {
-      //if (first == null)
-      //  first = Next();
 
       return new Expression();
+    }
+    private Expression ReferenceExpression()
+    {
+      var reference = new ReferenceExpression();
+      while(IsReference())
+      {
+        if (Current.Type == TokenType.ReferenceOp)
+          reference.IdentifierParts.Add(string.Empty);
+        if (Current.Type == TokenType.Identifier)
+          reference.IdentifierParts.Add(Current.Character);
+        Next();
+      }
+      return reference;
+    }
+
+    //private Expression BinaryOp()
+    //{
+    //  var left = Expression();
+    //  Next();
+    //  var op = _tokens.Current;
+    //  Next();
+    //  var right = Expression();
+    //}
+
+    private Expression UnaryOp()
+    {
+      var op = Current;
+      UnaryType type;
+      switch(op.Type)
+      {
+        case TokenType.AddOp:
+          type = UnaryType.Positive;
+          break;
+        case TokenType.SubtractOp:
+          type = UnaryType.Negative;
+          break;
+        case TokenType.BitwiseNotOp:
+          type = UnaryType.BitwiseNot;
+          break;
+        default:
+          throw Unexpected(op);
+      }
+      Next();
+      return new UnaryExpression { Type = type, Right = Expression() };
+    }
+
+    private Expression Constant()
+    {
+      //TODO: Record precision and scale of numeric, length of character data
+      var constant = Current;
+      Next();
+      switch (constant.Type)
+      {
+        case TokenType.IntConstant:
+          return new ConstantExpression { Type = SqlType.Int, Value = constant.Int };
+        case TokenType.BigIntConstant:
+          return new ConstantExpression { Type = SqlType.BigInt, Value = constant.BigInt };
+        case TokenType.FloatConstant:
+          return new ConstantExpression { Type = SqlType.Float, Value = constant.Real };
+        case TokenType.NumericConstant:
+          return new ConstantExpression { Type = SqlType.Numeric, Value = constant.Numeric };
+        case TokenType.NvarcharConstant:
+          return new ConstantExpression { Type = SqlType.NVarchar, Value = constant.Character };
+        case TokenType.RealConstant:
+          return new ConstantExpression { Type = SqlType.Real, Value = constant.Real };
+        case TokenType.VarcharConstant:
+          return new ConstantExpression { Type = SqlType.Varchar, Value = constant.Character };
+        default:
+          throw Expected("Constant");
+      }
+    }
+
+    private bool IsReference()
+    {
+      var type = Current.Type;
+      return type == TokenType.Identifier || type == TokenType.ReferenceOp;
     }
 
     private Exception Unexpected(Token token)
     {
       return new Exception(string.Format("`{0}` unexpected at line {1} char {2}.", token.Type, token.Line, token.Column));
+    }
+
+    private Exception Expected(string expected)
+    {
+      return new Exception(string.Format("'{0}' expected at line {2} char {3}. Found `{1}`", expected, Current.Type, Current.Line, Current.Column));
+    }
+
+    private void Next()
+    {
+      if (!_tokens.MoveNext())
+        throw Unexpected(new Token { Type = TokenType.EndOfFile });
+    }
+
+    private bool IsConstant()
+    {
+      var type = Current.Type;
+      return type == TokenType.IntConstant ||
+        type == TokenType.BigIntConstant ||
+        type == TokenType.FloatConstant ||
+        type == TokenType.NumericConstant ||
+        type == TokenType.NvarcharConstant ||
+        type == TokenType.RealConstant ||
+        type == TokenType.VarcharConstant;
+    }
+
+    private bool IsUnaryOp()
+    {
+      var type = _tokens.Current.Type;
+      return type == TokenType.AddOp ||
+        type == TokenType.SubtractOp ||
+        type == TokenType.BitwiseNotOp;
     }
 
     #region IEnumerator<Statement>
@@ -205,13 +250,8 @@ namespace tsqlc.Parse
 
       public bool MoveNext()
       {
-        var statement = _parser.NextStatement();
-        if (statement != null)
-        {
-          Current = statement;
-          return true;
-        }
-        return false;
+        Current = _parser.NextStatement();
+        return Current != null;
       }
 
       public void Reset() { }

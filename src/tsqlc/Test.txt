@@ -1,3 +1,5 @@
 ﻿
-select *, firsttest, secondtest AS t, thirdtest = 2, 's' AS T, 'b', 2, name, acs.name NewName
-select 1 as num,  num = 23
+-1 ++-+23 ~45 0.34 (    'hello'     ) abc.s 23 @test N'Hello2'
+
+/* select *, firsttest, secondtest AS t, thirdtest = 2, 's' AS T, 'b', 2, name, acs.name NewName */
+-- select 1 as num,  num = 23

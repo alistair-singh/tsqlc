@@ -33,4 +33,47 @@ namespace tsqlc.AST
   public class Expression
   {
   }
+
+  public enum SqlType
+  {
+    Float, Int, BigInt, Real, Numeric, Varchar, NVarchar
+  }
+
+  public enum UnaryType
+  {
+    Positive, Negative, BitwiseNot
+  }
+
+  public class UnaryExpression : Expression
+  {
+    public UnaryType Type { get; set; }
+    public Expression Right { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("{0}({1})", Type, Right);
+    }
+  }
+
+  public class ConstantExpression : Expression
+  {
+    public SqlType Type { get; set; }
+    public object Value { get; set; }
+
+    public override string ToString()
+    {
+      return Value.ToString();
+    }
+  }
+
+  public class ReferenceExpression : Expression
+  {
+    public readonly ICollection<string> IdentifierParts = new List<string>();
+    public string Identifier { get { return string.Join(".", IdentifierParts); } }
+
+    public override string ToString()
+    {
+      return Identifier;
+    }
+  }
 }

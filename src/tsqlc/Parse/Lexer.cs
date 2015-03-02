@@ -347,14 +347,17 @@ namespace tsqlc.Parse
             return MakeToken(TokenType.BitwiseAndAssignOp);
           }
           return MakeToken(TokenType.BitwiseAndOp);
+        case '~':
+          Next();
+          return MakeToken(TokenType.BitwiseNotOp);
         case '^':
           Next();
           if (_look == '=')
           {
             Next();
-            return MakeToken(TokenType.BitwiseNotAssignOp);
+            return MakeToken(TokenType.BitwiseXorAssignOp);
           }
-          return MakeToken(TokenType.BitwiseNotOp);
+          return MakeToken(TokenType.BitwiseXorOp);
         case '|':
           Next();
           if (_look == '=')
@@ -524,6 +527,7 @@ namespace tsqlc.Parse
           Current = token;
           return true;
         }
+        Current = null;
         return false;
       }
 

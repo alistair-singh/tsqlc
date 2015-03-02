@@ -32,6 +32,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using tsqlc.AST;
 using tsqlc.Parse;
 using tsqlc.Util;
 
@@ -62,9 +63,10 @@ namespace tsqlc
           using (Benchmark.Start("parser"))
           {
             var parser = new Parser(tokens);
-            foreach (var statements in parser)
+            foreach (dynamic statements in parser)
             {
-              Console.WriteLine(statements);
+              Expression exp = statements.Columns[0].Expression;
+              Console.WriteLine(exp);
             }
           }
         }
