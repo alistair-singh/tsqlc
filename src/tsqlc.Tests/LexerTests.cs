@@ -50,7 +50,7 @@ namespace tsqlc.Tests
         var result = new Lexer(input).ToArray();
         Assert.Fail("not supposed to reach here");
       }
-      catch(ArgumentNullException e)
+      catch (ArgumentNullException e)
       {
         Assert.IsTrue(e.ParamName == "characters", "Argument exception for characters not thrown");
       }
@@ -65,48 +65,147 @@ namespace tsqlc.Tests
     }
 
     [TestMethod]
-    public void LexVarcharConstant() { Assert.Fail("not implemented yet"); }
+    public void LexVarcharConstant()
+    {
+      const string input = @" 'hello' ";
+      var result = new Lexer(input).ToArray();
+      Assert.IsTrue(result.Length == 1, "result is empty");
+      Assert.IsTrue(result[0].Type == TokenType.VarcharConstant, "token type not varchar");
+      Assert.IsTrue(result[0].Character == "hello", "values are not equal");
+    }
 
     [TestMethod]
-    public void LexNVarcharConstant() { Assert.Fail("not implemented yet");  }
+    public void LexNvarcharConstant()
+    {
+      const string input = @" N'hello' ";
+      var result = new Lexer(input).ToArray();
+      Assert.IsTrue(result.Length == 1, "result is empty");
+      Assert.IsTrue(result[0].Type == TokenType.NvarcharConstant, "token type not nvarchar");
+      Assert.IsTrue(result[0].Character == "hello", "values are not equal");
+    }
 
     [TestMethod]
-    public void LexIntegerConstant() { Assert.Fail("not implemented yet");  }
+    public void LexIntegerConstant()
+    {
+      const string input = @" 123 ";
+      var result = new Lexer(input).ToArray();
+      Assert.IsTrue(result.Length == 1, "result is empty");
+      Assert.IsTrue(result[0].Type == TokenType.IntConstant, "token type not int");
+      Assert.IsTrue(result[0].Int == 123, "values are not equal");
+    }
 
     [TestMethod]
-    public void LexBigIntegerConstant() { Assert.Fail("not implemented yet");  }
+    public void LexBigIntegerConstant()
+    {
+      const string input = @" 6000000000 ";
+      var result = new Lexer(input).ToArray();
+      Assert.IsTrue(result.Length == 1, "result is empty");
+      Assert.IsTrue(result[0].Type == TokenType.BigIntConstant, "token type not bigint");
+      Assert.IsTrue(result[0].BigInt == 6000000000, "values are not equal");
+    }
 
     [TestMethod]
-    public void LexRealConstant() { Assert.Fail("not implemented yet");  }
+    public void LexRealConstant()
+    {
+      const string input = @" 3e+4 ";
+      var result = new Lexer(input).ToArray();
+      Assert.IsTrue(result.Length == 1, "result is empty");
+      Assert.IsTrue(result[0].Type == TokenType.RealConstant, "token type not real");
+      Assert.IsTrue(result[0].Real == 30000, "values are not equal");
+    }
 
     [TestMethod]
-    public void LexNumericConstant() { Assert.Fail("not implemented yet");  }
+    public void LexNumericConstant()
+    {
+      const string input = @" 100.001 ";
+      var result = new Lexer(input).ToArray();
+      Assert.IsTrue(result.Length == 1, "result is empty");
+      Assert.IsTrue(result[0].Type == TokenType.NumericConstant, "token type not numeric");
+      Assert.IsTrue(result[0].Numeric == new decimal(100.001), "values are not equal");
+    }
 
     [TestMethod]
-    public void LexDoubleQuotedIdentifier() { Assert.Fail("not implemented yet");  }
+    public void LexDoubleQuotedIdentifier()
+    {
+      const string input = @" ""  hello"" ";
+      var result = new Lexer(input).ToArray();
+      Assert.IsTrue(result.Length == 1, "result is empty");
+      Assert.IsTrue(result[0].Type == TokenType.Identifier, "token type not quoted identifier");
+      Assert.AreEqual("\"  hello\"", result[0].Character, "values are not equal");
+    }
 
     [TestMethod]
-    public void LexSquareBracketIdentifier() { Assert.Fail("not implemented yet");  }
+    public void LexIdentifier()
+    {
+      const string input = @" bye ";
+      var result = new Lexer(input).ToArray();
+      Assert.AreEqual(1, result.Length, "length not expected");
+      Assert.AreEqual(TokenType.Identifier, result[0].Type, "token type not quoted identifier");
+      Assert.AreEqual("bye", result[0].Character, "values are not equal");
+    }
 
     [TestMethod]
-    public void LexLineComment() { Assert.Fail("not implemented yet");  }
+    public void LexSquareBracketIdentifier()
+    {
+      const string input = @" [  hello  ] ";
+      var result = new Lexer(input).ToArray();
+      Assert.IsTrue(result.Length == 1, "result is empty");
+      Assert.IsTrue(result[0].Type == TokenType.Identifier, "token type not identifier");
+      Assert.AreEqual("[  hello  ]", result[0].Character, "values are not equal");
+    }
 
     [TestMethod]
-    public void LexBlockComment() { Assert.Fail("not implemented yet");  }
+    public void LexLineComment()
+    {
+      const string input = @"sdsd -- hello";
+      var result = new Lexer(input).ToArray();
+      Assert.AreEqual(2, result.Length, "length not expected");
+      Assert.AreEqual(TokenType.LineComment, result[1].Type, "token type not line comment");
+      Assert.AreEqual(" hello", result[1].Character, "values are not equal");
+    }
 
     [TestMethod]
-    public void LexStringUnrecognizedToken() { Assert.Fail("not implemented yet"); }
+    public void LexBlockComment()
+    {
+      const string input = @"sdsd /* hello
+todo
+*/ end";
+      var result = new Lexer(input).ToArray();
+      Assert.AreEqual(3, result.Length, "length not expected");
+      Assert.AreEqual(TokenType.BlockComment, result[1].Type, "token type not block comment");
+      Assert.AreEqual(@" hello
+todo
+", result[1].Character, "values are not equal");
+    }
 
     [TestMethod]
-    public void LexStringExpectedToken() { Assert.Fail("not implemented yet"); }
+    public void LexStringUnrecognizedToken()
+    {
+      Assert.Fail("not implemented yet");
+    }
 
     [TestMethod]
-    public void LexOperatorToken() { Assert.Fail("not implemented yet"); }
+    public void LexStringExpectedToken()
+    {
+      Assert.Fail("not implemented yet");
+    }
 
     [TestMethod]
-    public void LexKeywords() { Assert.Fail("not implemented yet"); }
+    public void LexOperatorToken()
+    {
+      Assert.Fail("not implemented yet");
+    }
 
     [TestMethod]
-    public void LexAcidTest() { Assert.Fail("not implemented yet"); }
+    public void LexKeywords()
+    {
+      Assert.Fail("not implemented yet");
+    }
+
+    [TestMethod]
+    public void LexAcidTest()
+    {
+      Assert.Fail("not implemented yet");
+    }
   }
 }

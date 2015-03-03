@@ -249,11 +249,12 @@ namespace tsqlc.Parse
     {
       if (_look == '-')
       {
+        Next();
         if (_look != '-')
           throw MakeError('-');
         Next();
 
-        while (_look != '\r' && _look != '\n')
+        while (_look != '\r' && _look != '\n' && _look != '\0')
           StashLook();
 
         Next();
