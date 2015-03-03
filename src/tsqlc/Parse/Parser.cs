@@ -58,6 +58,8 @@ namespace tsqlc.Parse
 {
   public class Parser : IEnumerable<Statement>
   {
+    private const int ReferenceListInitializationSize = 4;
+
     private readonly IEnumerator<Token> _tokens;
 
     private Token Current { get { return _tokens.Current; } }
@@ -71,7 +73,7 @@ namespace tsqlc.Parse
 
     public Statement NextStatement()
     {
-      if(Current ==  null && !_tokens.MoveNext())
+      if (Current == null && !_tokens.MoveNext())
         return null;
 
       switch (Current.Type)
@@ -89,7 +91,7 @@ namespace tsqlc.Parse
         return UnaryOp();
       if (IsReference())
         return ReferenceExpression();
-      if(Current.Type == TokenType.OpenBracket)
+      if (Current.Type == TokenType.OpenBracket)
       {
         Next();
         var expression = Expression();
@@ -101,18 +103,29 @@ namespace tsqlc.Parse
 
       return new Expression();
     }
+
     private Expression ReferenceExpression()
     {
-      var reference = new ReferenceExpression();
-      while(IsReference())
+      var parts = new List<string>(ReferenceListInitializationSize);
+
+      TokenType previous = TokenType.ReferenceOp;
+      while (IsReference())
       {
         if (Current.Type == TokenType.ReferenceOp)
-          reference.IdentifierParts.Add(string.Empty);
+        {
+          if (previous == TokenType.ReferenceOp)
+          {
+            parts.Add(string.Empty);
+            previous = Current.Type;
+          }
+        }
+
         if (Current.Type == TokenType.Identifier)
-          reference.IdentifierParts.Add(Current.Character);
+          parts.Add(Current.Character);
         Next();
       }
-      return reference;
+
+      return new ReferenceExpression { IdentifierParts = parts };
     }
 
     //private Expression BinaryOp()
@@ -128,7 +141,7 @@ namespace tsqlc.Parse
     {
       var op = Current;
       UnaryType type;
-      switch(op.Type)
+      switch (op.Type)
       {
         case TokenType.AddOp:
           type = UnaryType.Positive;
@@ -142,7 +155,7 @@ namespace tsqlc.Parse
         default:
           throw Unexpected(op);
       }
-      Next();
+      Consume();
       return new UnaryExpression { Type = type, Right = Expression() };
     }
 
@@ -150,7 +163,7 @@ namespace tsqlc.Parse
     {
       //TODO: Record precision and scale of numeric, length of character data
       var constant = Current;
-      Next();
+      Consume();
       switch (constant.Type)
       {
         case TokenType.IntConstant:
@@ -172,12 +185,6 @@ namespace tsqlc.Parse
       }
     }
 
-    private bool IsReference()
-    {
-      var type = Current.Type;
-      return type == TokenType.Identifier || type == TokenType.ReferenceOp;
-    }
-
     private Exception Unexpected(Token token)
     {
       return new Exception(string.Format("`{0}` unexpected at line {1} char {2}.", token.Type, token.Line, token.Column));
@@ -192,6 +199,11 @@ namespace tsqlc.Parse
     {
       if (!_tokens.MoveNext())
         throw Unexpected(new Token { Type = TokenType.EndOfFile });
+    }
+
+    private bool Consume()
+    {
+      return _tokens.MoveNext();
     }
 
     private bool IsConstant()
@@ -212,6 +224,12 @@ namespace tsqlc.Parse
       return type == TokenType.AddOp ||
         type == TokenType.SubtractOp ||
         type == TokenType.BitwiseNotOp;
+    }
+
+    private bool IsReference()
+    {
+      var type = Current.Type;
+      return type == TokenType.Identifier || type == TokenType.ReferenceOp;
     }
 
     #region IEnumerator<Statement>
@@ -250,8 +268,7 @@ namespace tsqlc.Parse
 
       public bool MoveNext()
       {
-        Current = _parser.NextStatement();
-        return Current != null;
+        return (Current = _parser.NextStatement()) != null;
       }
 
       public void Reset() { }

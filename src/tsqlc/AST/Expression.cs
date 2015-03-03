@@ -68,8 +68,8 @@ namespace tsqlc.AST
 
   public class ReferenceExpression : Expression
   {
-    public readonly ICollection<string> IdentifierParts = new List<string>();
-    public string Identifier { get { return string.Join(".", IdentifierParts); } }
+    public ICollection<string> IdentifierParts;
+    public string Identifier { get { return string.Join(".", IdentifierParts ?? new string[0]); } }
 
     public override string ToString()
     {
