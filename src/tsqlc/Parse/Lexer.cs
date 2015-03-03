@@ -49,12 +49,17 @@ namespace tsqlc.Parse
 
     public Lexer(IEnumerable<char> characters)
     {
+      if (characters == null)
+        throw new ArgumentNullException("characters");
+
       _col = 0;
       _line = 1;
       _builder = new StringBuilder();
-      _enumerator = characters.GetEnumerator();
       _peek = '\0';
 
+      _enumerator = characters.GetEnumerator();
+
+      // TODO: Move this next call to NextToken
       Next();
     }
 

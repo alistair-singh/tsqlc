@@ -111,19 +111,18 @@ namespace tsqlc.Parse
       TokenType previous = TokenType.ReferenceOp;
       while (IsReference())
       {
-        if (Current.Type == TokenType.ReferenceOp)
-        {
-          if (previous == TokenType.ReferenceOp)
-          {
-            parts.Add(string.Empty);
-            previous = Current.Type;
-          }
-        }
+        if (Current.Type == TokenType.ReferenceOp && previous == TokenType.ReferenceOp)
+          parts.Add(string.Empty);
 
         if (Current.Type == TokenType.Identifier)
           parts.Add(Current.Character);
-        Next();
+          
+        previous = Current.Type;
+        Consume();
       }
+
+      if(previous == TokenType.ReferenceOp)
+        parts.Add(string.Empty);
 
       return new ReferenceExpression { IdentifierParts = parts };
     }
@@ -228,6 +227,8 @@ namespace tsqlc.Parse
 
     private bool IsReference()
     {
+      if (Current == null)
+        return false;
       var type = Current.Type;
       return type == TokenType.Identifier || type == TokenType.ReferenceOp;
     }
