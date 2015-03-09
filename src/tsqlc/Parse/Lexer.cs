@@ -41,11 +41,13 @@ namespace tsqlc.Parse
     private char _peek;
     private int _col;
     private int _line;
+    private int _character;
     private readonly StringBuilder _builder;
     private readonly IEnumerator<char> _enumerator;
 
     private int _tokenLine;
     private int _tokenCol;
+    private int _tokenCharacterIndex;
 
     public Lexer(IEnumerable<char> characters)
     {
@@ -54,20 +56,22 @@ namespace tsqlc.Parse
 
       _col = 0;
       _line = 1;
+      _character = 0;
       _builder = new StringBuilder();
       _peek = '\0';
 
       _enumerator = characters.GetEnumerator();
-
-      // TODO: Move this next call to NextToken
-      Next();
     }
 
     private Token NextToken()
     {
+      if(_look == '\0')
+        Next();
+
       SkipWhitespace();
       _tokenLine = _line;
       _tokenCol = _col;
+      _tokenCharacterIndex = _character;
 
       if (_look == '.')
       {
@@ -120,6 +124,9 @@ namespace tsqlc.Parse
       }
       else
         _look = Read();
+
+      if(_look != '\0')
+        _character++;
 
       if (_look == '\n')
       {
@@ -486,7 +493,7 @@ namespace tsqlc.Parse
 
     private Token MakeToken(TokenType type)
     {
-      return new Token { Type = type, Line = _tokenLine, Column = _tokenCol };
+      return new Token { Type = type, Line = _tokenLine, Column = _tokenCol, CharacterIndex = _tokenCharacterIndex };
     }
 
     public void TerminateNullCharacter<T>(T expected)

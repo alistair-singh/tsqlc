@@ -29,6 +29,7 @@ namespace tsqlc.Parse
   {
     public int Line { get; set; }
     public int Column { get; set; }
+    public int CharacterIndex { get; set; }
     public TokenType Type { get; set; }
     public string Character { get; set; }
     public int Int { get; set; }

@@ -116,15 +116,46 @@ namespace tsqlc.Parse
 
         if (Current.Type == TokenType.Identifier)
           parts.Add(Current.Character);
-          
+
         previous = Current.Type;
         Consume();
       }
 
-      if(previous == TokenType.ReferenceOp)
+      if (previous == TokenType.ReferenceOp)
         parts.Add(string.Empty);
 
-      return new ReferenceExpression { IdentifierParts = parts };
+      var reference = new ReferenceExpression { IdentifierParts = parts };
+      if (Current != null && Current.Type == TokenType.OpenBracket)
+        return FunctionCall(reference);
+      return reference;
+    }
+
+    private Expression FunctionCall(ReferenceExpression reference)
+    {
+      if (Current.Type != TokenType.OpenBracket)
+        throw Expected("(");
+      Next();
+
+      var parameters = new List<Expression>();
+      if (Current.Type == TokenType.CloseBracket)
+        return new FunctionCallExpression { FunctionName = reference, Parameters = parameters };
+
+      parameters.Add(Expression());
+
+      while (Current.Type == TokenType.Comma)
+      {
+        Next();
+
+        if (Current == null)
+          throw Expected(")");
+        parameters.Add(Expression());
+      }
+
+      if (Current.Type != TokenType.CloseBracket)
+        throw Expected(")");
+      Next();
+
+      return new FunctionCallExpression { FunctionName = reference, Parameters = parameters };
     }
 
     //private Expression BinaryOp()

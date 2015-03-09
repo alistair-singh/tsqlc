@@ -110,6 +110,7 @@ namespace tsqlc.Tests
       const string input = @" 3e+4 ";
       var result = new Lexer(input).ToArray();
       Assert.IsTrue(result.Length == 1, "result is empty");
+      Assert.AreEqual(result[0].CharacterIndex, 2);
       Assert.IsTrue(result[0].Type == TokenType.RealConstant, "token type not real");
       Assert.IsTrue(result[0].Real == 30000, "values are not equal");
     }
@@ -172,6 +173,7 @@ todo
 */ end";
       var result = new Lexer(input).ToArray();
       Assert.AreEqual(3, result.Length, "length not expected");
+      Assert.AreEqual(result[1].CharacterIndex, 6);
       Assert.AreEqual(TokenType.BlockComment, result[1].Type, "token type not block comment");
       Assert.AreEqual(@" hello
 todo
