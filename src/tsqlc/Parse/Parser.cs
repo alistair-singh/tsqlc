@@ -78,9 +78,67 @@ namespace tsqlc.Parse
 
       switch (Current.Type)
       {
+        case TokenType.K_SELECT:
+          return Select();
         default:
           return new SelectStatement { Columns = new List<Column>() { new ExpressionColumn { Expression = Expression() } } };
       }
+    }
+
+    private Statement Select()
+    {
+      Match(TokenType.K_SELECT);
+      var columns = ColumnList();
+      return new SelectStatement { Columns = columns };
+    }
+
+    private ICollection<Column> ColumnList()
+    {
+      var columns = new List<Column>();
+      columns.Add(Column());
+      while (Current != null && Current.Type == TokenType.Comma)
+      {
+        Match(TokenType.Comma);
+        columns.Add(Column());
+      }
+      return columns;
+    }
+
+    private Column Column()
+    {
+      if (Current.Type == TokenType.StarOp)
+      {
+        Consume();
+        return new StarColumn { };
+      }
+
+      if (Current.Type == TokenType.Identifier || Current.Type == TokenType.VarcharConstant)
+      {
+        var token = Current;
+        Consume();
+        if (Current.Type == TokenType.AssignOp)
+        {
+          var column = new ExpressionColumn { Alias = token.Character };
+          Consume();
+          column.Expression = Expression();
+          return column;
+        }
+      }
+
+      var expression = Expression();
+      var optional = true;
+      if (Current != null && Current.Type == TokenType.K_AS)
+      {
+        Match(TokenType.K_AS);
+        optional = false;
+      }
+
+      if (Current != null && (Current.Type == TokenType.Identifier || Current.Type == TokenType.VarcharConstant))
+        return new ExpressionColumn { Expression = expression, Alias = Current.Character };
+      else if (!optional)
+        throw Expected("Identifier");
+
+      return new ExpressionColumn { Expression = expression };
     }
 
     private Expression PrimaryExpression()
@@ -93,11 +151,11 @@ namespace tsqlc.Parse
         return ReferenceExpression();
       else if (Current.Type == TokenType.OpenBracket)
       {
-        Next();
+        Consume();
         var expression = Expression();
         if (Current.Type != TokenType.CloseBracket)
           throw Expected(")");
-        Next();
+        Consume();
         return expression;
       }
       else throw Unexpected(Current);
@@ -156,7 +214,7 @@ namespace tsqlc.Parse
         default:
           throw Unexpected(Current);
       }
-      Next();
+      Consume();
       return type;
     }
 
@@ -188,9 +246,7 @@ namespace tsqlc.Parse
 
     private Expression FunctionCall(ReferenceExpression reference)
     {
-      if (Current.Type != TokenType.OpenBracket)
-        throw Expected("(");
-      Next();
+      Match(TokenType.OpenBracket);
 
       var parameters = new List<Expression>();
       if (Current.Type == TokenType.CloseBracket)
@@ -200,28 +256,14 @@ namespace tsqlc.Parse
 
       while (Current.Type == TokenType.Comma)
       {
-        Next();
+        Consume();
 
-        if (Current == null)
-          throw Expected(")");
         parameters.Add(Expression());
       }
 
-      if (Current.Type != TokenType.CloseBracket)
-        throw Expected(")");
-      Next();
-
+      Match(TokenType.CloseBracket);
       return new FunctionCallExpression { FunctionName = reference, Parameters = parameters };
     }
-
-    //private Expression BinaryOp()
-    //{
-    //  var left = Expression();
-    //  Next();
-    //  var op = _tokens.Current;
-    //  Next();
-    //  var right = Expression();
-    //}
 
     private Expression UnaryOp()
     {
@@ -285,6 +327,19 @@ namespace tsqlc.Parse
     {
       if (!_tokens.MoveNext())
         throw Unexpected(new Token { Type = TokenType.EndOfFile });
+    }
+
+    private void Match(TokenType type)
+    {
+      if (Current == null || Current.Type != type)
+        throw Expected(type.ToString());
+      Consume();
+    }
+
+    private void TerminateIfEndOfFile(TokenType type)
+    {
+      if (Current == null)
+        throw Expected(type.ToString());
     }
 
     private bool Consume()

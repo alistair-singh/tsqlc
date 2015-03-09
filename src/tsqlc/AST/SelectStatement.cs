@@ -34,5 +34,10 @@ namespace tsqlc.AST
   public class SelectStatement : Statement
   {
     public ICollection<Column> Columns { get; set; }
+
+    public override string ToString()
+    {
+      return string.Join(", ", Columns);
+    }
   }
 }

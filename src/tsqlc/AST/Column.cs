@@ -49,7 +49,7 @@ namespace tsqlc.AST
 
     public override string ToString()
     {
-      return string.Format("ExpressionColumn -> {0}", Alias);
+      return string.Format("ExpressionColumn -> {0} -> {1}", Alias, Expression);
     }
   }
 }

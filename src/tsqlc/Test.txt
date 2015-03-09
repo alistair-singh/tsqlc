@@ -1,7 +1,9 @@
 ﻿
-12 + 13 * 14 + 15 * 23 * 22 + 23 / 23
+--12 + 13 * 14 + 15 * 23 * 22 + 23 / 23
 
--- -1 ++-+23 * ~45 + 0.34 - ( 23 /   'hello'     ) % ...abc...s... - 23 / func(232323 ,2323, 'sdsdsd') * @test N'Hello2' + ...abc...s... / 3 * 20 + 23 * 5
+select 12 , 12 ,3 ,4, *, cu = hello
+
+ --1 ++-+23 * ~45 + 0.34 - ( 23 /   'hello'     ) % ...abc...s... - 23 / func(1+func2(2)*2 ,2323, 'sdsdsd') * @test N'Hello2' + ...abc...s... / 3 * 20 + 23 * 5
 
 /* select *, firsttest, secondtest AS t, thirdtest = 2, 's' AS T, 'b', 2, name, acs.name NewName */
 -- select 1 as num,  num = 23

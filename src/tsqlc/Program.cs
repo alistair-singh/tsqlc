@@ -63,10 +63,9 @@ namespace tsqlc
           using (Benchmark.Start("parser"))
           {
             var parser = new Parser(tokens);
-            foreach (dynamic statements in parser)
+            foreach (dynamic statement in parser)
             {
-              Expression exp = statements.Columns[0].Expression;
-              Console.WriteLine(exp);
+              Console.WriteLine(statement);
             }
           }
         }
