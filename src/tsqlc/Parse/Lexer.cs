@@ -194,7 +194,10 @@ namespace tsqlc.Parse
         StashLook();
 
         while (_look != terminator)
+        {
+          TerminateNullCharacter(terminator);
           StashLook();
+        }
 
         StashLook();
       }
@@ -232,6 +235,7 @@ namespace tsqlc.Parse
 
       while (true)
       {
+        TerminateNullCharacter('\'');
         if (_look == '\'' && Peek() == '\'')
           Next();
         else if (_look == '\'')
@@ -483,6 +487,12 @@ namespace tsqlc.Parse
     private Token MakeToken(TokenType type)
     {
       return new Token { Type = type, Line = _tokenLine, Column = _tokenCol };
+    }
+
+    public void TerminateNullCharacter<T>(T expected)
+    {
+      if (_look == '\0')
+        throw MakeError(expected);
     }
 
     private Exception MakeError<T>(T expected)

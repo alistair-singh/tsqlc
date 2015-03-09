@@ -179,33 +179,60 @@ todo
     }
 
     [TestMethod]
-    public void LexStringUnrecognizedToken()
+    public void LexNeverEndingIdentifier()
     {
-      Assert.Fail("not implemented yet");
+      try
+      {
+        const string input = @"[ sadsdsd  ";
+        var result = new Lexer(input).ToArray();
+        Assert.Fail("Never reach here");
+      }
+      catch (Exception e)
+      {
+        Assert.AreEqual("`]` expected at line 1 char 12.", e.Message);
+      }
     }
 
     [TestMethod]
-    public void LexStringExpectedToken()
+    public void LexNeverEndingString()
     {
-      Assert.Fail("not implemented yet");
+      try
+      {
+        const string input = @"' sad sd sd ";
+        var result = new Lexer(input).ToArray();
+        Assert.Fail("Never reach here");
+      }
+      catch (Exception e)
+      {
+        Assert.AreEqual("`'` expected at line 1 char 13.", e.Message);
+      }
     }
 
     [TestMethod]
     public void LexOperatorToken()
     {
-      Assert.Fail("not implemented yet");
+      const string input = @"- += =";
+      var result = new Lexer(input).ToArray();
+      Assert.AreEqual(3, result.Length, "length not expected");
+      Assert.AreEqual(TokenType.SubtractOp, result[0].Type, "not subtract");
+      Assert.AreEqual(TokenType.AddAssignOp, result[1].Type, "not add assignment");
+      Assert.AreEqual(TokenType.AssignOp, result[2].Type, "not assignment");
     }
 
     [TestMethod]
     public void LexKeywords()
     {
-      Assert.Fail("not implemented yet");
-    }
+      const string input = @" SELECT FRoM delete ";
 
-    [TestMethod]
-    public void LexAcidTest()
-    {
-      Assert.Fail("not implemented yet");
+      var result = new Lexer(input).ToArray();
+
+      Assert.AreEqual(3, result.Length, "length not expected");
+      Assert.AreEqual(TokenType.K_SELECT, result[0].Type, "not keyword");
+      Assert.AreEqual(@"SELECT", result[0].Character, "values are not equal");
+      Assert.AreEqual(TokenType.K_FROM, result[1].Type, "not keyword");
+      Assert.AreEqual(@"FRoM", result[1].Character, "values are not equal");
+      Assert.AreEqual(TokenType.K_DELETE, result[2].Type, "not keyword");
+      Assert.AreEqual(@"delete", result[2].Character, "values are not equal");
     }
   }
 }
