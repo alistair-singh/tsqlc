@@ -44,6 +44,18 @@ namespace tsqlc.AST
     Positive, Negative, BitwiseNot
   }
 
+  public enum BinaryType
+  {
+    Multiply = 201,
+    Modulus = 202,
+    Division = 203,
+    Addition = 101,
+    Subtraction = 102,
+    BitwiseAnd = 103,
+    BitwiseXor = 104,
+    BitwiseOr = 105
+  }
+
   public class UnaryExpression : Expression
   {
     public UnaryType Type { get; set; }
@@ -74,6 +86,18 @@ namespace tsqlc.AST
     public override string ToString()
     {
       return string.Format("{0}({1})", FunctionName, string.Join(", ", Parameters));
+    }
+  }
+
+  public class BinaryOperationExpression : Expression
+  {
+    public Expression Left { get; set; }
+    public BinaryType Type { get; set; }
+    public Expression Right { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("({0} {1} {2})", Type, Left, Right);
     }
   }
 

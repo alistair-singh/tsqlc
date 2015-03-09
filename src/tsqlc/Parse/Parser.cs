@@ -83,15 +83,15 @@ namespace tsqlc.Parse
       }
     }
 
-    private Expression Expression()
+    private Expression PrimaryExpression()
     {
       if (IsConstant())
         return Constant();
-      if (IsUnaryOp())
+      else if (IsUnaryOp())
         return UnaryOp();
-      if (IsReference())
+      else if (IsReference())
         return ReferenceExpression();
-      if (Current.Type == TokenType.OpenBracket)
+      else if (Current.Type == TokenType.OpenBracket)
       {
         Next();
         var expression = Expression();
@@ -100,8 +100,64 @@ namespace tsqlc.Parse
         Next();
         return expression;
       }
+      else throw Unexpected(Current);
+    }
 
-      return new Expression();
+    private Expression Expression()
+    {
+      var exp = PrimaryExpression();
+      return Expression(exp, 1);
+    }
+
+    private Expression Expression(Expression left, int minPrecedence)
+    {
+      while (IsBinaryOp())
+      {
+        var type = BinaryOperator();
+        var precidence = (int)type / 100;
+        var right = PrimaryExpression();
+        if (minPrecedence >= precidence)
+          right = Expression(right, precidence);
+
+        left = new BinaryOperationExpression { Left = left, Type = type, Right = right };
+      }
+      return left;
+    }
+
+    private BinaryType BinaryOperator()
+    {
+      BinaryType type;
+      switch (Current.Type)
+      {
+        case TokenType.DivideOp:
+          type = BinaryType.Division;
+          break;
+        case TokenType.StarOp:
+          type = BinaryType.Multiply;
+          break;
+        case TokenType.ModuloOp:
+          type = BinaryType.Modulus;
+          break;
+        case TokenType.AddOp:
+          type = BinaryType.Addition;
+          break;
+        case TokenType.SubtractOp:
+          type = BinaryType.Subtraction;
+          break;
+        case TokenType.BitwiseAndOp:
+          type = BinaryType.BitwiseAnd;
+          break;
+        case TokenType.BitwiseXorOp:
+          type = BinaryType.BitwiseXor;
+          break;
+        case TokenType.BitwiseOrOp:
+          type = BinaryType.BitwiseOr;
+          break;
+        default:
+          throw Unexpected(Current);
+      }
+      Next();
+      return type;
     }
 
     private Expression ReferenceExpression()
@@ -186,7 +242,7 @@ namespace tsqlc.Parse
           throw Unexpected(op);
       }
       Consume();
-      return new UnaryExpression { Type = type, Right = Expression() };
+      return new UnaryExpression { Type = type, Right = PrimaryExpression() };
     }
 
     private Expression Constant()
@@ -262,6 +318,14 @@ namespace tsqlc.Parse
         return false;
       var type = Current.Type;
       return type == TokenType.Identifier || type == TokenType.ReferenceOp;
+    }
+
+    private bool IsBinaryOp()
+    {
+      return Current != null && (Current.Type == TokenType.DivideOp || Current.Type == TokenType.StarOp ||
+        Current.Type == TokenType.ModuloOp || Current.Type == TokenType.AddOp ||
+        Current.Type == TokenType.SubtractOp || Current.Type == TokenType.BitwiseAndOp ||
+        Current.Type == TokenType.BitwiseXorOp || Current.Type == TokenType.BitwiseOrOp);
     }
 
     #region IEnumerator<Statement>
