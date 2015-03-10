@@ -36,7 +36,7 @@ namespace tsqlc.AST
     public Expression TopExpression { get; set; }
     public ICollection<Column> Columns { get; set; }
     public ICollection<From> FromList { get; set; }
-    public ComparisonExpression WhereClause { get; set; }
+    public BooleanExpression WhereClause { get; set; }
 
     public override string ToString()
     {

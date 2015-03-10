@@ -70,15 +70,15 @@ namespace tsqlc.Parse
 
       var columns = ColumnList();
 
-      List<From> froms = null;
+      ICollection<From> froms = null;
       if (Current.Type == TokenType.K_FROM)
         froms = FromList();
 
-      ComparisonExpression whereClause = null;
+      BooleanExpression whereClause = null;
       if (Current.Type == TokenType.K_WHERE)
       {
         Consume();
-        var booleanExpression = PrimaryBooleanExpression();
+        whereClause = BooleanExpression();
       }
 
       return new SelectStatement
@@ -90,10 +90,12 @@ namespace tsqlc.Parse
       };
     }
 
-    private List<From> FromList()
+    private ICollection<From> FromList()
     {
       Match(TokenType.K_FROM);
-      throw new NotImplementedException();
+      var froms = new List<From>();
+      froms.Add(new From { Name = ReferenceExpression() as ReferenceExpression });
+      return froms;
     }
 
     private ICollection<Column> ColumnList()

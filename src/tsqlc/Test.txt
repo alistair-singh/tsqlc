@@ -1,4 +1,6 @@
 ﻿
+select * from tb_test where name like 'alistair%'
+
 3=3 OR 1=1 AND 2=2 AND 3=3 OR 4=4
 
 ...hello... = .s..sd...sd..s.s..sdada...sd..w..e.....s.sds AND

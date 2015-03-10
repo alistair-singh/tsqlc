@@ -28,6 +28,6 @@ namespace tsqlc.AST
 {
   public class From
   {
-
+    public ReferenceExpression Name { get; set; }
   }
 }
