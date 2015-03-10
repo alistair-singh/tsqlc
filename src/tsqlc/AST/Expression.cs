@@ -56,7 +56,7 @@ namespace tsqlc.AST
     BitwiseOr = 105
   }
 
-  public enum BooleanBinaryType
+  public enum BooleanOperatorType
   {
     Equals,
     LessThan,
@@ -66,7 +66,9 @@ namespace tsqlc.AST
     NotEqual,
     NotGreaterThan,
     NotLessThan,
-    Like
+    Like,
+    Or = 101,
+    And = 201
   }
 
   public enum RangeOperatorType
@@ -171,7 +173,7 @@ namespace tsqlc.AST
   public class BooleanRangeExpression : BooleanExpression
   {
     public Expression Left { get; set; }
-    public BooleanBinaryType BooleanOperator { get; set; }
+    public BooleanOperatorType BooleanOperator { get; set; }
     public RangeOperatorType RangeOperator { get; set; }
     public SelectStatement Subquery { get; set; }
 
@@ -184,7 +186,7 @@ namespace tsqlc.AST
   public class ComparisonExpression : BooleanExpression
   {
     public Expression Left { get; set; }
-    public BooleanBinaryType Operator { get; set; }
+    public BooleanOperatorType Operator { get; set; }
     public Expression Right { get; set; }
 
     public override string ToString()
@@ -209,6 +211,18 @@ namespace tsqlc.AST
     public Expression Left { get; set; }
     public BinaryType Type { get; set; }
     public Expression Right { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("({0} {1} {2})", Type, Left, Right);
+    }
+  }
+
+  public class BooleanBinaryExpression : BooleanExpression
+  {
+    public BooleanExpression Left { get; set; }
+    public BooleanOperatorType Type { get; set; }
+    public BooleanExpression Right { get; set; }
 
     public override string ToString()
     {

@@ -78,7 +78,7 @@ namespace tsqlc.Parse
       if (Current.Type == TokenType.K_WHERE)
       {
         Consume();
-        var booleanExpression = BooleanExpression();
+        var booleanExpression = PrimaryBooleanExpression();
       }
 
       return new SelectStatement
@@ -147,10 +147,31 @@ namespace tsqlc.Parse
 
     private BooleanExpression BooleanExpression()
     {
+      var exp = PrimaryBooleanExpression();
+      return BooleanExpression(exp, 1);
+    }
+
+    private BooleanExpression BooleanExpression(BooleanExpression left, int minPrecedence)
+    {
+      while (IsBooleanOp())
+      {
+        var type = BooleanOperator();
+        var precidence = (int)type / 100;
+        var right = PrimaryBooleanExpression();
+        if (minPrecedence >= precidence)
+          right = BooleanExpression(right, precidence);
+
+        left = new BooleanBinaryExpression { Left = left, Type = type, Right = right };
+      }
+      return left;
+    }
+
+    private BooleanExpression PrimaryBooleanExpression()
+    {
       if (Current.Type == TokenType.K_NOT)
       {
         Consume();
-        var booleanExpression = BooleanExpression();
+        var booleanExpression = PrimaryBooleanExpression();
         return new BooleanNotExpresison { Right = booleanExpression };
       }
 
@@ -201,7 +222,7 @@ namespace tsqlc.Parse
       return new BooleanExistsExpression { Subquery = subquery };
     }
 
-    private BooleanRangeExpression BooleanRange(Expression left, BooleanBinaryType op)
+    private BooleanRangeExpression BooleanRange(Expression left, BooleanOperatorType op)
     {
       var rangeOp = RangeOperator();
       Match(TokenType.OpenBracket);
@@ -390,38 +411,44 @@ namespace tsqlc.Parse
       }
     }
 
-    private BooleanBinaryType BooleanOperator()
+    private BooleanOperatorType BooleanOperator()
     {
-      BooleanBinaryType type;
+      BooleanOperatorType type;
       switch (Current.Type)
       {
         case TokenType.K_LIKE:
-          type = BooleanBinaryType.Like;
+          type = BooleanOperatorType.Like;
           break;
         case TokenType.AssignOp:
-          type = BooleanBinaryType.Equals;
+          type = BooleanOperatorType.Equals;
           break;
         case TokenType.LessThanOp:
-          type = BooleanBinaryType.LessThan;
+          type = BooleanOperatorType.LessThan;
           break;
         case TokenType.GreaterThanOp:
-          type = BooleanBinaryType.GreaterThan;
+          type = BooleanOperatorType.GreaterThan;
           break;
         case TokenType.LessThanOrEqualOp:
-          type = BooleanBinaryType.LessThanOrEqual;
+          type = BooleanOperatorType.LessThanOrEqual;
           break;
         case TokenType.GreaterThanOrEqualOp:
-          type = BooleanBinaryType.GreaterThanOrEqual;
+          type = BooleanOperatorType.GreaterThanOrEqual;
           break;
         case TokenType.AnsiNotEqualOp:
         case TokenType.MsNotEqualOp:
-          type = BooleanBinaryType.NotEqual;
+          type = BooleanOperatorType.NotEqual;
           break;
         case TokenType.NotLessThanOp:
-          type = BooleanBinaryType.NotLessThan;
+          type = BooleanOperatorType.NotLessThan;
           break;
         case TokenType.NotGreaterThanOp:
-          type = BooleanBinaryType.NotGreaterThan;
+          type = BooleanOperatorType.NotGreaterThan;
+          break;
+        case TokenType.K_OR:
+          type = BooleanOperatorType.Or;
+          break;
+        case TokenType.K_AND:
+          type = BooleanOperatorType.And;
           break;
         default:
           throw Unexpected(Current);
@@ -545,6 +572,11 @@ namespace tsqlc.Parse
         Current.Type == TokenType.ModuloOp || Current.Type == TokenType.AddOp ||
         Current.Type == TokenType.SubtractOp || Current.Type == TokenType.BitwiseAndOp ||
         Current.Type == TokenType.BitwiseXorOp || Current.Type == TokenType.BitwiseOrOp);
+    }
+
+    private bool IsBooleanOp()
+    {
+      return Current != null && (Current.Type == TokenType.K_AND || Current.Type == TokenType.K_OR);
     }
 
     private Exception Unexpected(Token token)

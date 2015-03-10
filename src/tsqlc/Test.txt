@@ -1,13 +1,15 @@
 ﻿
-...hello... = .s..sd...sd..s.s..sdada...sd..w..e.....s.sds
-98787 < kkkkkk
-hello in (8,5,4)
-NOT NOT 1 not between 23 and 56
-NOT hello <> 'sdsd'
-23 Like 'sdsd%'
-hjjjj = 78
-hekko in (select 5)
-byebye <> ALL (select 23)
+3=3 OR 1=1 AND 2=2 AND 3=3 OR 4=4
+
+...hello... = .s..sd...sd..s.s..sdada...sd..w..e.....s.sds AND
+98787 < kkkkkk OR
+hello in (8,5,4) AND 
+NOT NOT 1 not between 23 and 56 OR
+NOT hello <> 'sdsd' AND
+23 Like 'sdsd%' AND 
+hjjjj = 78 AND 
+hekko in (select 5) OR
+byebye <> ALL (select 23) OR
 EXISTS (select 1)
 
 --12 + 13 * 14 + 15 * 23 * 22 + 23 / 23
