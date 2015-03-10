@@ -90,165 +90,6 @@ namespace tsqlc.Parse
       };
     }
 
-    private BooleanExpression BooleanExpression()
-    {
-      if (Current.Type == TokenType.K_NOT)
-      {
-        Consume();
-        var booleanExpression = BooleanExpression();
-        return new BooleanNotExpresison { Left = booleanExpression };
-      }
-
-      if (Current.Type == TokenType.K_EXISTS)
-        return BooleanExists();
-
-      var left = Expression();
-
-      if (Current.Type == TokenType.K_BETWEEN)
-        return BooleanBetween(left);
-
-      if (Current.Type == TokenType.K_IN)
-        return BooleanIn(left);
-
-      if (Current.Type == TokenType.K_NOT)
-      {
-        Consume();
-        switch (Current.Type)
-        {
-          case TokenType.K_IN:
-            return BooleanIn(left, true);
-          case TokenType.K_BETWEEN:
-            return BooleanBetween(left, true);
-          default:
-            throw Unexpected(Current);
-        }
-      }
-
-      var op = BooleanOperator();
-      switch (Current.Type)
-      {
-        case TokenType.K_ALL:
-        case TokenType.K_ANY:
-        case TokenType.K_SOME:
-          return BooleanRange(left, op);
-      }
-
-      var right = Expression();
-      return new ComparisonExpression { Left = left, Operator = op, Right = right };
-    }
-
-    private BooleanExpression BooleanExists()
-    {
-      throw new NotImplementedException();
-    }
-
-    private BooleanRangeExpression BooleanRange(Expression left, BooleanBinaryType op)
-    {
-      var rangeOp = RangeOperator();
-      Match(TokenType.OpenBracket);
-      var subquery = Select();
-      Match(TokenType.CloseBracket);
-      return new BooleanRangeExpression
-      {
-        Left = left,
-        BooleanOperator = op,
-        RangeOperator = rangeOp,
-        Subquery = subquery
-      };
-    }
-
-    private RangeOperatorType RangeOperator()
-    {
-      RangeOperatorType type;
-      switch (Current.Type)
-      {
-        case TokenType.K_ALL:
-          type = RangeOperatorType.All;
-          break;
-        case TokenType.K_ANY:
-          type = RangeOperatorType.Any;
-          break;
-        case TokenType.K_SOME:
-          type = RangeOperatorType.Some;
-          break;
-        default:
-          throw Unexpected(Current);
-      }
-      Consume();
-      return type;
-    }
-
-    private BooleanInExpression BooleanIn(Expression left, bool not = false)
-    {
-      Match(TokenType.K_IN);
-      Match(TokenType.OpenBracket);
-      if (Current.Type == TokenType.K_SELECT)
-      {
-        var subquery = Select();
-        Match(TokenType.CloseBracket);
-        return new BooleanInSubqueryExpression { Not = not, Left = left, Subquery = subquery };
-      }
-
-      var list = new List<Expression>();
-      list.Add(Expression());
-      while (Current != null && Current.Type == TokenType.Comma)
-      {
-        Consume();
-        list.Add(Expression());
-      }
-      Match(TokenType.CloseBracket);
-      return new BooleanInListExpression { Not = not, Left = left, List = list };
-    }
-
-    private BooleanBetweenExpression BooleanBetween(Expression left, bool not = false)
-    {
-      Match(TokenType.K_BETWEEN);
-      var first = Expression();
-      Match(TokenType.K_AND);
-      var second = Expression();
-      return new BooleanBetweenExpression { Left = left, Not = not, First = first, Second = second };
-    }
-
-    private BooleanBinaryType BooleanOperator()
-    {
-      BooleanBinaryType type;
-      switch (Current.Type)
-      {
-        case TokenType.K_LIKE:
-          type = BooleanBinaryType.Like;
-          break;
-        case TokenType.AssignOp:
-          type = BooleanBinaryType.Equals;
-          break;
-        case TokenType.LessThanOp:
-          type = BooleanBinaryType.LessThan;
-          break;
-        case TokenType.GreaterThanOp:
-          type = BooleanBinaryType.GreaterThan;
-          break;
-        case TokenType.LessThanOrEqualOp:
-          type = BooleanBinaryType.LessThanOrEqual;
-          break;
-        case TokenType.GreaterThanOrEqualOp:
-          type = BooleanBinaryType.GreaterThanOrEqual;
-          break;
-        case TokenType.AnsiNotEqualOp:
-        case TokenType.MsNotEqualOp:
-          type = BooleanBinaryType.NotEqual;
-          break;
-        case TokenType.NotLessThanOp:
-          type = BooleanBinaryType.NotLessThan;
-          break;
-        case TokenType.NotGreaterThanOp:
-          type = BooleanBinaryType.NotGreaterThan;
-          break;
-        default:
-          throw Unexpected(Current);
-      }
-      Consume();
-      return type;
-    }
-
     private List<From> FromList()
     {
       Match(TokenType.K_FROM);
@@ -304,6 +145,108 @@ namespace tsqlc.Parse
       return new ExpressionColumn { Expression = expression };
     }
 
+    private BooleanExpression BooleanExpression()
+    {
+      if (Current.Type == TokenType.K_NOT)
+      {
+        Consume();
+        var booleanExpression = BooleanExpression();
+        return new BooleanNotExpresison { Right = booleanExpression };
+      }
+
+      if (Current.Type == TokenType.K_EXISTS)
+        return BooleanExists();
+
+      var left = Expression();
+
+      if (Current.Type == TokenType.K_BETWEEN)
+        return BooleanBetween(left);
+
+      if (Current.Type == TokenType.K_IN)
+        return BooleanIn(left);
+
+      if (Current.Type == TokenType.K_NOT)
+      {
+        Consume();
+        switch (Current.Type)
+        {
+          case TokenType.K_IN:
+            return BooleanIn(left, true);
+          case TokenType.K_BETWEEN:
+            return BooleanBetween(left, true);
+          default:
+            throw Unexpected(Current);
+        }
+      }
+
+      var op = BooleanOperator();
+      switch (Current.Type)
+      {
+        case TokenType.K_ALL:
+        case TokenType.K_ANY:
+        case TokenType.K_SOME:
+          return BooleanRange(left, op);
+      }
+
+      var right = Expression();
+      return new ComparisonExpression { Left = left, Operator = op, Right = right };
+    }
+
+    private BooleanExpression BooleanExists()
+    {
+      Match(TokenType.K_EXISTS);
+      Match(TokenType.OpenBracket);
+      var subquery = Select();
+      Match(TokenType.CloseBracket);
+      return new BooleanExistsExpression { Subquery = subquery };
+    }
+
+    private BooleanRangeExpression BooleanRange(Expression left, BooleanBinaryType op)
+    {
+      var rangeOp = RangeOperator();
+      Match(TokenType.OpenBracket);
+      var subquery = Select();
+      Match(TokenType.CloseBracket);
+      return new BooleanRangeExpression
+      {
+        Left = left,
+        BooleanOperator = op,
+        RangeOperator = rangeOp,
+        Subquery = subquery
+      };
+    }
+
+    private BooleanInExpression BooleanIn(Expression left, bool not = false)
+    {
+      Match(TokenType.K_IN);
+      Match(TokenType.OpenBracket);
+      if (Current.Type == TokenType.K_SELECT)
+      {
+        var subquery = Select();
+        Match(TokenType.CloseBracket);
+        return new BooleanInSubqueryExpression { Not = not, Left = left, Subquery = subquery };
+      }
+
+      var list = new List<Expression>();
+      list.Add(Expression());
+      while (Current != null && Current.Type == TokenType.Comma)
+      {
+        Consume();
+        list.Add(Expression());
+      }
+      Match(TokenType.CloseBracket);
+      return new BooleanInListExpression { Not = not, Left = left, List = list };
+    }
+
+    private BooleanBetweenExpression BooleanBetween(Expression left, bool not = false)
+    {
+      Match(TokenType.K_BETWEEN);
+      var first = Expression();
+      Match(TokenType.K_AND);
+      var second = Expression();
+      return new BooleanBetweenExpression { Left = left, Not = not, First = first, Second = second };
+    }
+
     private Expression PrimaryExpression()
     {
       if (IsConstant())
@@ -350,6 +293,164 @@ namespace tsqlc.Parse
       return left;
     }
 
+    private Expression ReferenceExpression()
+    {
+      var parts = new List<string>(ReferenceListInitializationSize);
+
+      TokenType previous = TokenType.ReferenceOp;
+      while (IsReference() && previous != TokenType.Identifier)
+      {
+        if (Current.Type == TokenType.ReferenceOp && previous == TokenType.ReferenceOp)
+        {
+          parts.Add(string.Empty);
+          Consume();
+        }
+
+        if (Current.Type == TokenType.Identifier)
+        {
+          parts.Add(Current.Character);
+          Consume();
+        }
+
+        previous = Current.Type;
+      }
+
+      var reference = new ReferenceExpression { IdentifierParts = parts };
+      if (Current != null && Current.Type == TokenType.OpenBracket)
+        return FunctionCall(reference);
+      return reference;
+    }
+
+    private FunctionCallExpression FunctionCall(ReferenceExpression reference)
+    {
+      Match(TokenType.OpenBracket);
+
+      var parameters = new List<Expression>();
+      if (Current.Type == TokenType.CloseBracket)
+        return new FunctionCallExpression { FunctionName = reference, Parameters = parameters };
+
+      parameters.Add(Expression());
+
+      while (Current.Type == TokenType.Comma)
+      {
+        Consume();
+
+        parameters.Add(Expression());
+      }
+
+      Match(TokenType.CloseBracket);
+      return new FunctionCallExpression { FunctionName = reference, Parameters = parameters };
+    }
+
+    private UnaryExpression UnaryOp()
+    {
+      var op = Current;
+      UnaryType type;
+      switch (op.Type)
+      {
+        case TokenType.AddOp:
+          type = UnaryType.Positive;
+          break;
+        case TokenType.SubtractOp:
+          type = UnaryType.Negative;
+          break;
+        case TokenType.BitwiseNotOp:
+          type = UnaryType.BitwiseNot;
+          break;
+        default:
+          throw Unexpected(op);
+      }
+      Consume();
+      return new UnaryExpression { Type = type, Right = PrimaryExpression() };
+    }
+
+    private ConstantExpression Constant()
+    {
+      //TODO: Record precision and scale of numeric, length of character data
+      var constant = Current;
+      Consume();
+      switch (constant.Type)
+      {
+        case TokenType.IntConstant:
+          return new ConstantExpression { Type = SqlType.Int, Value = constant.Int };
+        case TokenType.BigIntConstant:
+          return new ConstantExpression { Type = SqlType.BigInt, Value = constant.BigInt };
+        case TokenType.FloatConstant:
+          return new ConstantExpression { Type = SqlType.Float, Value = constant.Real };
+        case TokenType.NumericConstant:
+          return new ConstantExpression { Type = SqlType.Numeric, Value = constant.Numeric };
+        case TokenType.NvarcharConstant:
+          return new ConstantExpression { Type = SqlType.NVarchar, Value = constant.Character };
+        case TokenType.RealConstant:
+          return new ConstantExpression { Type = SqlType.Real, Value = constant.Real };
+        case TokenType.VarcharConstant:
+          return new ConstantExpression { Type = SqlType.Varchar, Value = constant.Character };
+        default:
+          throw Expected("Constant");
+      }
+    }
+
+    private BooleanBinaryType BooleanOperator()
+    {
+      BooleanBinaryType type;
+      switch (Current.Type)
+      {
+        case TokenType.K_LIKE:
+          type = BooleanBinaryType.Like;
+          break;
+        case TokenType.AssignOp:
+          type = BooleanBinaryType.Equals;
+          break;
+        case TokenType.LessThanOp:
+          type = BooleanBinaryType.LessThan;
+          break;
+        case TokenType.GreaterThanOp:
+          type = BooleanBinaryType.GreaterThan;
+          break;
+        case TokenType.LessThanOrEqualOp:
+          type = BooleanBinaryType.LessThanOrEqual;
+          break;
+        case TokenType.GreaterThanOrEqualOp:
+          type = BooleanBinaryType.GreaterThanOrEqual;
+          break;
+        case TokenType.AnsiNotEqualOp:
+        case TokenType.MsNotEqualOp:
+          type = BooleanBinaryType.NotEqual;
+          break;
+        case TokenType.NotLessThanOp:
+          type = BooleanBinaryType.NotLessThan;
+          break;
+        case TokenType.NotGreaterThanOp:
+          type = BooleanBinaryType.NotGreaterThan;
+          break;
+        default:
+          throw Unexpected(Current);
+      }
+      Consume();
+      return type;
+    }
+
+    private RangeOperatorType RangeOperator()
+    {
+      RangeOperatorType type;
+      switch (Current.Type)
+      {
+        case TokenType.K_ALL:
+          type = RangeOperatorType.All;
+          break;
+        case TokenType.K_ANY:
+          type = RangeOperatorType.Any;
+          break;
+        case TokenType.K_SOME:
+          type = RangeOperatorType.Some;
+          break;
+        default:
+          throw Unexpected(Current);
+      }
+      Consume();
+      return type;
+    }
+
     private BinaryType BinaryOperator()
     {
       BinaryType type;
@@ -384,113 +485,6 @@ namespace tsqlc.Parse
       }
       Consume();
       return type;
-    }
-
-    private Expression ReferenceExpression()
-    {
-      var parts = new List<string>(ReferenceListInitializationSize);
-
-      TokenType previous = TokenType.ReferenceOp;
-      while (IsReference() && previous != TokenType.Identifier)
-      {
-        if (Current.Type == TokenType.ReferenceOp && previous == TokenType.ReferenceOp)
-        {
-          parts.Add(string.Empty);
-          Consume();
-        }
-
-        if (Current.Type == TokenType.Identifier)
-        {
-          parts.Add(Current.Character);
-          Consume();
-        }
-
-        previous = Current.Type;
-      }
-
-      var reference = new ReferenceExpression { IdentifierParts = parts };
-      if (Current != null && Current.Type == TokenType.OpenBracket)
-        return FunctionCall(reference);
-      return reference;
-    }
-
-    private Expression FunctionCall(ReferenceExpression reference)
-    {
-      Match(TokenType.OpenBracket);
-
-      var parameters = new List<Expression>();
-      if (Current.Type == TokenType.CloseBracket)
-        return new FunctionCallExpression { FunctionName = reference, Parameters = parameters };
-
-      parameters.Add(Expression());
-
-      while (Current.Type == TokenType.Comma)
-      {
-        Consume();
-
-        parameters.Add(Expression());
-      }
-
-      Match(TokenType.CloseBracket);
-      return new FunctionCallExpression { FunctionName = reference, Parameters = parameters };
-    }
-
-    private Expression UnaryOp()
-    {
-      var op = Current;
-      UnaryType type;
-      switch (op.Type)
-      {
-        case TokenType.AddOp:
-          type = UnaryType.Positive;
-          break;
-        case TokenType.SubtractOp:
-          type = UnaryType.Negative;
-          break;
-        case TokenType.BitwiseNotOp:
-          type = UnaryType.BitwiseNot;
-          break;
-        default:
-          throw Unexpected(op);
-      }
-      Consume();
-      return new UnaryExpression { Type = type, Right = PrimaryExpression() };
-    }
-
-    private Expression Constant()
-    {
-      //TODO: Record precision and scale of numeric, length of character data
-      var constant = Current;
-      Consume();
-      switch (constant.Type)
-      {
-        case TokenType.IntConstant:
-          return new ConstantExpression { Type = SqlType.Int, Value = constant.Int };
-        case TokenType.BigIntConstant:
-          return new ConstantExpression { Type = SqlType.BigInt, Value = constant.BigInt };
-        case TokenType.FloatConstant:
-          return new ConstantExpression { Type = SqlType.Float, Value = constant.Real };
-        case TokenType.NumericConstant:
-          return new ConstantExpression { Type = SqlType.Numeric, Value = constant.Numeric };
-        case TokenType.NvarcharConstant:
-          return new ConstantExpression { Type = SqlType.NVarchar, Value = constant.Character };
-        case TokenType.RealConstant:
-          return new ConstantExpression { Type = SqlType.Real, Value = constant.Real };
-        case TokenType.VarcharConstant:
-          return new ConstantExpression { Type = SqlType.Varchar, Value = constant.Character };
-        default:
-          throw Expected("Constant");
-      }
-    }
-
-    private Exception Unexpected(Token token)
-    {
-      return new Exception(string.Format("`{0}` unexpected at line {1} char {2}.", token.Type, token.Line, token.Column));
-    }
-
-    private Exception Expected(string expected)
-    {
-      return new Exception(string.Format("'{0}' expected at line {2} char {3}. Found `{1}`", expected, Current.Type, Current.Line, Current.Column));
     }
 
     private void Next()
@@ -551,6 +545,16 @@ namespace tsqlc.Parse
         Current.Type == TokenType.ModuloOp || Current.Type == TokenType.AddOp ||
         Current.Type == TokenType.SubtractOp || Current.Type == TokenType.BitwiseAndOp ||
         Current.Type == TokenType.BitwiseXorOp || Current.Type == TokenType.BitwiseOrOp);
+    }
+
+    private Exception Unexpected(Token token)
+    {
+      return new Exception(string.Format("`{0}` unexpected at line {1} char {2}.", token.Type, token.Line, token.Column));
+    }
+
+    private Exception Expected(string expected)
+    {
+      return new Exception(string.Format("'{0}' expected at line {2} char {3}. Found `{1}`", expected, Current.Type, Current.Line, Current.Column));
     }
 
     #region IEnumerator<Statement>

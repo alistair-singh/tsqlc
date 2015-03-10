@@ -107,19 +107,21 @@ namespace tsqlc.AST
 
   public class BooleanExpression : Expression
   {
-    public Expression Left { get; set; }
   }
 
   public class BooleanNotExpresison : BooleanExpression
   {
+    public Expression Right { get; set; }
+
     public override string ToString()
     {
-      return string.Format("(Not {0})", Left);
+      return string.Format("(Not {0})", Right);
     }
   }
 
   public class BooleanInExpression : BooleanExpression
   {
+    public Expression Left { get; set; }
     public bool Not { get; set; }
   }
 
@@ -130,6 +132,16 @@ namespace tsqlc.AST
     public override string ToString()
     {
       return string.Format("({0}IN {1} ({2}))", Not ? "Not" : string.Empty, Left, Subquery);
+    }
+  }
+
+  public class BooleanExistsExpression : BooleanExpression
+  {
+    public SelectStatement Subquery { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("(EXISTS {0})", Subquery);
     }
   }
 
@@ -145,6 +157,7 @@ namespace tsqlc.AST
 
   public class BooleanBetweenExpression : BooleanExpression
   {
+    public Expression Left { get; set; }
     public bool Not { get; set; }
     public Expression First { get; set; }
     public Expression Second { get; set; }
@@ -157,6 +170,7 @@ namespace tsqlc.AST
 
   public class BooleanRangeExpression : BooleanExpression
   {
+    public Expression Left { get; set; }
     public BooleanBinaryType BooleanOperator { get; set; }
     public RangeOperatorType RangeOperator { get; set; }
     public SelectStatement Subquery { get; set; }
@@ -169,6 +183,7 @@ namespace tsqlc.AST
 
   public class ComparisonExpression : BooleanExpression
   {
+    public Expression Left { get; set; }
     public BooleanBinaryType Operator { get; set; }
     public Expression Right { get; set; }
 

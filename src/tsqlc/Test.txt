@@ -8,6 +8,7 @@ NOT hello <> 'sdsd'
 hjjjj = 78
 hekko in (select 5)
 byebye <> ALL (select 23)
+EXISTS (select 1)
 
 --12 + 13 * 14 + 15 * 23 * 22 + 23 / 23
 
