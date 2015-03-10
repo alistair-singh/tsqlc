@@ -56,6 +56,24 @@ namespace tsqlc.AST
     BitwiseOr = 105
   }
 
+  public enum BooleanBinaryType
+  {
+    Equals,
+    LessThan,
+    GreaterThan,
+    LessThanOrEqual,
+    GreaterThanOrEqual,
+    NotEqual,
+    NotGreaterThan,
+    NotLessThan,
+    Like
+  }
+
+  public enum RangeOperatorType
+  {
+    All, Any, Some
+  }
+
   public class UnaryExpression : Expression
   {
     public UnaryType Type { get; set; }
@@ -75,6 +93,88 @@ namespace tsqlc.AST
     public override string ToString()
     {
       return Value.ToString();
+    }
+  }
+
+  public class SelectStatementExpression : Expression
+  {
+    public Statement Statement { get; set; }
+    public override string ToString()
+    {
+      return string.Format("(SELECT ...)");
+    }
+  }
+
+  public class BooleanExpression : Expression
+  {
+    public Expression Left { get; set; }
+  }
+
+  public class BooleanNotExpresison : BooleanExpression
+  {
+    public override string ToString()
+    {
+      return string.Format("(Not {0})", Left);
+    }
+  }
+
+  public class BooleanInExpression : BooleanExpression
+  {
+    public bool Not { get; set; }
+  }
+
+  public class BooleanInSubqueryExpression : BooleanInExpression
+  {
+    public SelectStatement Subquery { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("({0}IN {1} ({2}))", Not ? "Not" : string.Empty, Left, Subquery);
+    }
+  }
+
+  public class BooleanInListExpression : BooleanInExpression
+  {
+    public ICollection<Expression> List { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("({0}IN {1} ({2}))", Not ? "Not" : string.Empty, Left, string.Join(",", List));
+    }
+  }
+
+  public class BooleanBetweenExpression : BooleanExpression
+  {
+    public bool Not { get; set; }
+    public Expression First { get; set; }
+    public Expression Second { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("({0}BETWEEN {1} {2} {3})", Not ? "Not" : string.Empty, Left, First, Second);
+    }
+  }
+
+  public class BooleanRangeExpression : BooleanExpression
+  {
+    public BooleanBinaryType BooleanOperator { get; set; }
+    public RangeOperatorType RangeOperator { get; set; }
+    public SelectStatement Subquery { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("({0} {1} (:e {2}) (:e {3}))", BooleanOperator, RangeOperator, Left, Subquery);
+    }
+  }
+
+  public class ComparisonExpression : BooleanExpression
+  {
+    public BooleanBinaryType Operator { get; set; }
+    public Expression Right { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("({0} (:e {1}) (:e {2}))", Operator, Left, Right);
     }
   }
 

@@ -65,7 +65,8 @@ namespace tsqlc
             var parser = new Parser(tokens);
             foreach (dynamic statement in parser)
             {
-              Console.WriteLine(statement);
+              dynamic v = statement.Columns[0].Expression;
+              Console.WriteLine(v);
             }
           }
         }
