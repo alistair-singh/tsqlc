@@ -66,7 +66,10 @@ namespace tsqlc.Parse
 
       Expression top = null;
       if (Current.Type == TokenType.K_TOP)
-        top = Expression();
+      {
+        Consume();
+        top = PrimaryExpression();
+      }
 
       var columns = ColumnList();
 
@@ -96,6 +99,43 @@ namespace tsqlc.Parse
       var froms = new List<From>();
       froms.Add(From(JoinType.PRIMARY));
 
+      while (IsJoin())
+      {
+        switch (Current.Type)
+        {
+          case TokenType.K_INNER:
+            Match(TokenType.K_INNER);
+            Match(TokenType.K_JOIN);
+            froms.Add(From(JoinType.INNER));
+            break;
+          case TokenType.K_JOIN:
+            Match(TokenType.K_JOIN);
+            froms.Add(From(JoinType.INNER));
+            break;
+          case TokenType.K_LEFT:
+            Match(TokenType.K_LEFT);
+            if(Current != null && Current.Type == TokenType.K_OUTER)
+              Consume();
+            Match(TokenType.K_JOIN);
+            froms.Add(From(JoinType.LEFT));
+            break;
+          case TokenType.K_RIGHT:
+            Match(TokenType.K_RIGHT);
+            if(Current != null && Current.Type == TokenType.K_OUTER)
+              Consume();
+            Match(TokenType.K_JOIN);
+            froms.Add(From(JoinType.RIGHT));
+            break;
+          case TokenType.K_FULL:
+            Match(TokenType.K_FULL);
+            if(Current != null && Current.Type == TokenType.K_OUTER)
+              Consume();
+            Match(TokenType.K_JOIN);
+            froms.Add(From(JoinType.OUTER_JOIN));
+            break;
+        }
+      }
+
       return froms;
     }
 
@@ -106,13 +146,19 @@ namespace tsqlc.Parse
         Match(TokenType.OpenBracket);
         var subquery = Select();
         Match(TokenType.CloseBracket);
-        var alias = Alias();
-        return new SubqueryFrom { Join = type, Subquery = subquery, Alias = alias };
+        var alias = TableAlias();
+        return new SubqueryFrom
+        {
+          Join = type,
+          Subquery = subquery,
+          Alias = alias,
+          OnClause = OnClause(type)
+        };
       }
       else
       {
         var reference = ReferenceExpression();
-        var alias = Alias();
+        var alias = TableAlias();
         if (Current != null && Current.Type == TokenType.K_WITH)
         {
           Consume();
@@ -126,7 +172,7 @@ namespace tsqlc.Parse
         if (Current != null && Current.Type == TokenType.OpenBracket)
         {
           Match(TokenType.OpenBracket);
-          while(Current != null && (Current.Type == TokenType.Identifier || Current.Type == TokenType.K_HOLDLOCK))
+          while (Current != null && (Current.Type == TokenType.Identifier || Current.Type == TokenType.K_HOLDLOCK))
           {
             TableHint hint;
             if (TableHintMap.TryLookUp(Current.Character, out hint))
@@ -147,11 +193,32 @@ namespace tsqlc.Parse
           Match(TokenType.CloseBracket);
         }
 
-        return new ReferenceFrom { Join = type, Name = reference, Alias = alias, Hints = hints };
+        return new ReferenceFrom
+        {
+          Join = type,
+          Name = reference,
+          Alias = alias,
+          Hints = hints,
+          OnClause = OnClause(type)
+        };
       }
     }
 
-    private string Alias()
+    private BooleanExpression OnClause(JoinType type)
+    {
+      switch (type)
+      {
+        case JoinType.INNER:
+        case JoinType.LEFT:
+        case JoinType.OUTER_JOIN:
+        case JoinType.RIGHT:
+          Match(TokenType.K_ON);
+          return BooleanExpression();
+      }
+      return null;
+    }
+
+    private string TableAlias()
     {
       string alias = string.Empty;
       if (Current != null && Current.Type == TokenType.K_AS)
@@ -166,6 +233,7 @@ namespace tsqlc.Parse
         alias = Current.Character;
         Consume();
       }
+      //TODO: Add table alias
       return alias;
     }
 
@@ -211,7 +279,11 @@ namespace tsqlc.Parse
       }
 
       if (Current != null && (Current.Type == TokenType.Identifier || Current.Type == TokenType.VarcharConstant))
-        return new ExpressionColumn { Expression = expression, Alias = Current.Character };
+      {
+        var column = new ExpressionColumn { Expression = expression, Alias = Current.Character };
+        Consume();
+        return column;
+      }
       else if (!optional)
         throw Expected("Identifier");
 
@@ -347,6 +419,8 @@ namespace tsqlc.Parse
         return Constant();
       else if (IsUnaryOp())
         return UnaryOp();
+      else if (Current != null && Current.Type == TokenType.K_NULL)
+        return NullExpression();
       else if (IsReference())
       {
         var reference = ReferenceExpression();
@@ -370,6 +444,12 @@ namespace tsqlc.Parse
         return expression;
       }
       else throw Unexpected(Current);
+    }
+
+    private NullExpression NullExpression()
+    {
+      Match(TokenType.K_NULL);
+      return new NullExpression();
     }
 
     private Expression Expression()
@@ -610,6 +690,16 @@ namespace tsqlc.Parse
     private bool Consume()
     {
       return _tokens.MoveNext();
+    }
+
+    private bool IsJoin()
+    {
+      return Current != null &&
+        (TokenType.K_LEFT == Current.Type ||
+        TokenType.K_RIGHT == Current.Type ||
+        TokenType.K_INNER == Current.Type ||
+        TokenType.K_JOIN == Current.Type ||
+        TokenType.K_FULL == Current.Type);
     }
 
     private bool IsConstant()

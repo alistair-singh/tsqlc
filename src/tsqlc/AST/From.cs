@@ -50,19 +50,31 @@ namespace tsqlc.AST
   {
     public ReferenceExpression Name { get; set; }
     public ICollection<TableHint> Hints { get; set; }
+    public BooleanExpression OnClause { get; set; }
 
     public override string ToString()
     {
-      return string.Format("(:{2} ({3}) {1}->{0})", Name, Alias, Join, string.Join(", ", Hints));
+      return string.Format("(:{2} ({3}) {1}->{0} {4})", 
+        Name,
+        Alias, 
+        Join, 
+        string.Join(", ", Hints), 
+        OnClause != null ? OnClause.ToString() : string.Empty);
     }
   }
 
   public class SubqueryFrom : From
   {
     public SelectStatement Subquery { get; set; }
+    public BooleanExpression OnClause { get; set; }
+
     public override string ToString()
     {
-      return string.Format("(:{2} {1}->{0})", Subquery, Alias, Join);
+      return string.Format("(:{2} {1}->{0} {4})", 
+        Subquery, 
+        Alias, 
+        Join, 
+        OnClause != null ? OnClause.ToString() : string.Empty);
     }
   }
 }

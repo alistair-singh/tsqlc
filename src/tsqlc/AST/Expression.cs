@@ -87,6 +87,14 @@ namespace tsqlc.AST
     }
   }
 
+  public class NullExpression : Expression
+  {
+    public override string ToString()
+    {
+      return "(null)";
+    }
+  }
+
   public class ConstantExpression : Expression
   {
     public SqlType Type { get; set; }

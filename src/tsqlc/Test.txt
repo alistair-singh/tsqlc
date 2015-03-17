@@ -1,5 +1,16 @@
 ﻿
-select * from tb_test with () where name like 'alistair%'
+select  top (100*10) *, NULL AS col1
+from    tb_test as t with (nolock) 
+        inner join tb_test2 t2 
+          on t1.id = t2.id
+        join t3 on 1=2
+        full join t3 on 0=3
+        left join t3 on 0=2
+        right join t3 on 0=1
+        full outer join t4 on 333=4
+        left outer join t4 on x =x
+        right outer join t4 on y = z
+where   name like 'alistair%'
 
 3=3 OR 1=1 AND 2=2 AND 3=3 OR 4=4
 
