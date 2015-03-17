@@ -197,12 +197,12 @@ namespace tsqlc.AST
 
   public class FunctionCallExpression : Expression
   {
-    public ReferenceExpression FunctionName { get; set; }
+    public ReferenceExpression Function { get; set; }
     public ICollection<Expression> Parameters { get; set; }
 
     public override string ToString()
     {
-      return string.Format("{0}({1})", FunctionName, string.Join(", ", Parameters));
+      return string.Format("{0}({1})", Function, string.Join(", ", Parameters));
     }
   }
 

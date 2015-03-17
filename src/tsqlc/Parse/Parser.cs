@@ -94,7 +94,23 @@ namespace tsqlc.Parse
     {
       Match(TokenType.K_FROM);
       var froms = new List<From>();
-      froms.Add(new From { Name = ReferenceExpression() as ReferenceExpression });
+      var reference = ReferenceExpression();
+      var alias = string.Empty;
+
+      if (Current != null && Current.Type == TokenType.K_AS)
+      {
+        Consume();
+        if (Current == null || Current.Type != TokenType.Identifier)
+          throw Unexpected(Current);
+      }
+
+      if (Current != null && Current.Type == TokenType.Identifier)
+      {
+        alias = Current.Character;
+        Consume();
+      }
+
+      froms.Add(new From { Name = reference, Alias = alias });
       return froms;
     }
 
@@ -277,7 +293,13 @@ namespace tsqlc.Parse
       else if (IsUnaryOp())
         return UnaryOp();
       else if (IsReference())
-        return ReferenceExpression();
+      {
+        var reference = ReferenceExpression();
+        if (Current != null && Current.Type == TokenType.OpenBracket)
+          return FunctionCall(reference);
+        else
+          return reference;
+      }
       else if (Current.Type == TokenType.OpenBracket)
       {
         Consume();
@@ -316,7 +338,7 @@ namespace tsqlc.Parse
       return left;
     }
 
-    private Expression ReferenceExpression()
+    private ReferenceExpression ReferenceExpression()
     {
       var parts = new List<string>(ReferenceListInitializationSize);
 
@@ -338,31 +360,26 @@ namespace tsqlc.Parse
         previous = Current.Type;
       }
 
-      var reference = new ReferenceExpression { IdentifierParts = parts };
-      if (Current != null && Current.Type == TokenType.OpenBracket)
-        return FunctionCall(reference);
-      return reference;
+      return new ReferenceExpression { IdentifierParts = parts };
     }
 
     private FunctionCallExpression FunctionCall(ReferenceExpression reference)
     {
       Match(TokenType.OpenBracket);
-
       var parameters = new List<Expression>();
       if (Current.Type == TokenType.CloseBracket)
-        return new FunctionCallExpression { FunctionName = reference, Parameters = parameters };
+        return new FunctionCallExpression { Function = reference, Parameters = parameters };
 
       parameters.Add(Expression());
 
       while (Current.Type == TokenType.Comma)
       {
         Consume();
-
         parameters.Add(Expression());
       }
 
       Match(TokenType.CloseBracket);
-      return new FunctionCallExpression { FunctionName = reference, Parameters = parameters };
+      return new FunctionCallExpression { Function = reference, Parameters = parameters };
     }
 
     private UnaryExpression UnaryOp()
