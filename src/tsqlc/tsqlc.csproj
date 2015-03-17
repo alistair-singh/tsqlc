@@ -46,6 +46,7 @@
     <Compile Include="AST\From.cs" />
     <Compile Include="AST\Statement.cs" />
     <Compile Include="AST\SelectStatement.cs" />
+    <Compile Include="Parse\TableHint.cs" />
     <Compile Include="Util\Benchmark.cs" />
     <Compile Include="Parse\Parser.cs" />
     <Compile Include="Parse\Keyword.cs" />

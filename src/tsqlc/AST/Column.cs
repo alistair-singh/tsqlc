@@ -38,7 +38,7 @@ namespace tsqlc.AST
 
     public override string ToString()
     {
-      return string.Format("StartColumn -> {0}", TableAlias);
+      return string.Format("(*->{0})", TableAlias);
     }
   }
 
@@ -49,7 +49,7 @@ namespace tsqlc.AST
 
     public override string ToString()
     {
-      return string.Format("ExpressionColumn -> {0} -> {1}", Alias, Expression);
+      return string.Format("({0}->{1})", Expression, Alias);
     }
   }
 }

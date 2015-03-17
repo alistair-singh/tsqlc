@@ -56,7 +56,7 @@ namespace tsqlc.Parse
         case TokenType.K_SELECT:
           return Select();
         default:
-          return new SelectStatement { Columns = new List<Column>() { new ExpressionColumn { Expression = BooleanExpression() } } };
+          return new SelectStatement { ColumnList = new List<Column>() { new ExpressionColumn { Expression = BooleanExpression() } } };
       }
     }
 
@@ -83,7 +83,7 @@ namespace tsqlc.Parse
 
       return new SelectStatement
       {
-        Columns = columns,
+        ColumnList = columns,
         WhereClause = whereClause,
         FromList = froms,
         TopExpression = top
@@ -94,9 +94,66 @@ namespace tsqlc.Parse
     {
       Match(TokenType.K_FROM);
       var froms = new List<From>();
-      var reference = ReferenceExpression();
-      var alias = string.Empty;
+      froms.Add(From(JoinType.PRIMARY));
 
+      return froms;
+    }
+
+    private From From(JoinType type)
+    {
+      if (Current != null && Current.Type == TokenType.OpenBracket)
+      {
+        Match(TokenType.OpenBracket);
+        var subquery = Select();
+        Match(TokenType.CloseBracket);
+        var alias = Alias();
+        return new SubqueryFrom { Join = type, Subquery = subquery, Alias = alias };
+      }
+      else
+      {
+        var reference = ReferenceExpression();
+        var alias = Alias();
+        if (Current != null && Current.Type == TokenType.K_WITH)
+        {
+          Consume();
+          if (Current == null || Current.Type != TokenType.OpenBracket)
+            throw Unexpected(Current);
+        }
+
+        //TODO: parser must break when no locking hints are specified
+        //      ... or should it...
+        var hints = new List<TableHint>();
+        if (Current != null && Current.Type == TokenType.OpenBracket)
+        {
+          Match(TokenType.OpenBracket);
+          while(Current != null && (Current.Type == TokenType.Identifier || Current.Type == TokenType.K_HOLDLOCK))
+          {
+            TableHint hint;
+            if (TableHintMap.TryLookUp(Current.Character, out hint))
+              hints.Add(hint);
+            else
+              throw Unexpected(Current);
+
+            Consume();
+
+            if (Current != null && Current.Type == TokenType.Comma)
+            {
+              Consume();
+              continue;
+            }
+            else
+              break;
+          }
+          Match(TokenType.CloseBracket);
+        }
+
+        return new ReferenceFrom { Join = type, Name = reference, Alias = alias, Hints = hints };
+      }
+    }
+
+    private string Alias()
+    {
+      string alias = string.Empty;
       if (Current != null && Current.Type == TokenType.K_AS)
       {
         Consume();
@@ -109,9 +166,7 @@ namespace tsqlc.Parse
         alias = Current.Character;
         Consume();
       }
-
-      froms.Add(new From { Name = reference, Alias = alias });
-      return froms;
+      return alias;
     }
 
     private ICollection<Column> ColumnList()

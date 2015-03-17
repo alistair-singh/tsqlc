@@ -34,13 +34,17 @@ namespace tsqlc.AST
   public class SelectStatement : Statement
   {
     public Expression TopExpression { get; set; }
-    public ICollection<Column> Columns { get; set; }
+    public ICollection<Column> ColumnList { get; set; }
     public ICollection<From> FromList { get; set; }
     public BooleanExpression WhereClause { get; set; }
 
     public override string ToString()
     {
-      return string.Join(", ", Columns);
+      return string.Format("(:t {0} :c ({1}) :f ({2}) :w {3})",
+        TopExpression,
+        string.Join(", ", ColumnList),
+        string.Join(", ", FromList ?? Enumerable.Empty<From>()),
+        WhereClause);
     }
   }
 }

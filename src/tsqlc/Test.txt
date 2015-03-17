@@ -1,5 +1,5 @@
 ﻿
-select * from tb_test as Y where name like 'alistair%'
+select * from tb_test with () where name like 'alistair%'
 
 3=3 OR 1=1 AND 2=2 AND 3=3 OR 4=4
 

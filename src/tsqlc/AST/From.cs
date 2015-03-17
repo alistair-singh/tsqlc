@@ -24,12 +24,45 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System.Collections.Generic;
+using tsqlc.Parse;
 namespace tsqlc.AST
 {
+  public enum JoinType
+  {
+    PRIMARY = 0,
+    INNER,
+    LEFT,
+    RIGHT,
+    CROSS_JOIN,
+    CROSS_APPLY,
+    OUTER_JOIN,
+    OUTER_APPLY
+  }
+
   public class From
   {
-    public ReferenceExpression Name { get; set; }
-
     public string Alias { get; set; }
+    public JoinType Join { get; set; }
+  }
+
+  public class ReferenceFrom : From
+  {
+    public ReferenceExpression Name { get; set; }
+    public ICollection<TableHint> Hints { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("(:{2} ({3}) {1}->{0})", Name, Alias, Join, string.Join(", ", Hints));
+    }
+  }
+
+  public class SubqueryFrom : From
+  {
+    public SelectStatement Subquery { get; set; }
+    public override string ToString()
+    {
+      return string.Format("(:{2} {1}->{0})", Subquery, Alias, Join);
+    }
   }
 }
