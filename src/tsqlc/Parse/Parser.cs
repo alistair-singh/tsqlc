@@ -55,9 +55,37 @@ namespace tsqlc.Parse
       {
         case TokenType.K_SELECT:
           return Select();
+        case TokenType.K_IF:
+          return If();
+        case TokenType.K_BEGIN:
+          return Block();
         default:
           return new SelectStatement { ColumnList = new List<Column>() { new ExpressionColumn { Expression = BooleanExpression() } } };
       }
+    }
+
+    private Statement Block()
+    {
+      Match(TokenType.K_BEGIN);
+      var statements = new List<Statement>();
+      while (Current != null && Current.Type != TokenType.K_END)
+        statements.Add(NextStatement());
+      Match(TokenType.K_END);
+      return new Block { Statements = statements };
+    }
+
+    private Statement If()
+    {
+      Match(TokenType.K_IF);
+      var test = BooleanExpression();
+      var ifStatement = NextStatement();
+      Statement elseStatement = null;
+      if(Current != null && Current.Type == TokenType.K_ELSE)
+      {
+        Consume();
+        elseStatement = NextStatement();
+      }
+      return new IfStatement { Test = test, If = ifStatement, Else = elseStatement };
     }
 
     private SelectStatement Select()

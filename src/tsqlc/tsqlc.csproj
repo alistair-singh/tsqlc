@@ -41,9 +41,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AST\Block.cs" />
     <Compile Include="AST\Column.cs" />
+    <Compile Include="AST\DeleteStatement.cs" />
     <Compile Include="AST\Expression.cs" />
     <Compile Include="AST\From.cs" />
+    <Compile Include="AST\IfStatement.cs" />
     <Compile Include="AST\Statement.cs" />
     <Compile Include="AST\SelectStatement.cs" />
     <Compile Include="Parse\TableHint.cs" />
