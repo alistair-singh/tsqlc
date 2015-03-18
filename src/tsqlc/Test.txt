@@ -11,6 +11,8 @@ from    tb_test as t with (nolock)
         left outer join t4 on x =x
         right outer join t4 on y = z
 where   name like 'alistair%'
+        and name is not null
+        or age is null
 
 3=3 OR 1=1 AND 2=2 AND 3=3 OR 4=4
 

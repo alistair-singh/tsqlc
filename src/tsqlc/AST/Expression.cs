@@ -191,6 +191,17 @@ namespace tsqlc.AST
     }
   }
 
+  public class NullComparisonExpression : BooleanExpression
+  {
+    public Expression Left { get; set; }
+    public bool IsNull { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("({0} {1})", IsNull ? "IsNull" : "IsNotNull", Left);
+    }
+  }
+
   public class ComparisonExpression : BooleanExpression
   {
     public Expression Left { get; set; }

@@ -114,21 +114,21 @@ namespace tsqlc.Parse
             break;
           case TokenType.K_LEFT:
             Match(TokenType.K_LEFT);
-            if(Current != null && Current.Type == TokenType.K_OUTER)
+            if (Current != null && Current.Type == TokenType.K_OUTER)
               Consume();
             Match(TokenType.K_JOIN);
             froms.Add(From(JoinType.LEFT));
             break;
           case TokenType.K_RIGHT:
             Match(TokenType.K_RIGHT);
-            if(Current != null && Current.Type == TokenType.K_OUTER)
+            if (Current != null && Current.Type == TokenType.K_OUTER)
               Consume();
             Match(TokenType.K_JOIN);
             froms.Add(From(JoinType.RIGHT));
             break;
           case TokenType.K_FULL:
             Match(TokenType.K_FULL);
-            if(Current != null && Current.Type == TokenType.K_OUTER)
+            if (Current != null && Current.Type == TokenType.K_OUTER)
               Consume();
             Match(TokenType.K_JOIN);
             froms.Add(From(JoinType.OUTER_JOIN));
@@ -331,6 +331,9 @@ namespace tsqlc.Parse
       if (Current.Type == TokenType.K_IN)
         return BooleanIn(left);
 
+      if (Current.Type == TokenType.K_IS)
+        return IsNullOrNotNull(left);
+
       if (Current.Type == TokenType.K_NOT)
       {
         Consume();
@@ -356,6 +359,19 @@ namespace tsqlc.Parse
 
       var right = Expression();
       return new ComparisonExpression { Left = left, Operator = op, Right = right };
+    }
+
+    private BooleanExpression IsNullOrNotNull(Expression left)
+    {
+      Match(TokenType.K_IS);
+      var isNull = true;
+      if (Current != null && Current.Type == TokenType.K_NOT)
+      {
+        isNull = false;
+        Consume();
+      }
+      Match(TokenType.K_NULL);
+      return new NullComparisonExpression { IsNull = isNull, Left = left };
     }
 
     private BooleanExpression BooleanExists()
