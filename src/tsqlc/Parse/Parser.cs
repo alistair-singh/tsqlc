@@ -69,7 +69,20 @@ namespace tsqlc.Parse
     private DeleteStatement Delete()
     {
       Match(TokenType.K_DELETE);
-      return new DeleteStatement { };
+      var top = Top();
+
+      if (Current != null && Current.Type == TokenType.K_FROM)
+      {
+        Consume();
+      }
+      var target = From(allowAlias: false);
+
+      ICollection<From> fromList = null;
+      if (Current != null && Current.Type == TokenType.K_FROM)
+        fromList = FromList();
+
+      var where = Where();
+      return new DeleteStatement { TopExpression = top, Target = target, FromList = fromList, WhereClause = where };
     }
 
     private BlockStatement Block()
@@ -100,25 +113,14 @@ namespace tsqlc.Parse
     {
       Match(TokenType.K_SELECT);
 
-      Expression top = null;
-      if (Current.Type == TokenType.K_TOP)
-      {
-        Consume();
-        top = PrimaryExpression();
-      }
-
+      var top = Top();
       var columns = ColumnList();
 
       ICollection<From> froms = null;
       if (Current.Type == TokenType.K_FROM)
         froms = FromList();
 
-      BooleanExpression whereClause = null;
-      if (Current.Type == TokenType.K_WHERE)
-      {
-        Consume();
-        whereClause = BooleanExpression();
-      }
+      var whereClause = Where();
 
       return new SelectStatement
       {
@@ -129,11 +131,32 @@ namespace tsqlc.Parse
       };
     }
 
+    private BooleanExpression Where()
+    {
+      if (Current.Type == TokenType.K_WHERE)
+      {
+        Consume();
+        return BooleanExpression();
+      }
+
+      return null;
+    }
+
+    private Expression Top()
+    {
+      if (Current.Type == TokenType.K_TOP)
+      {
+        Consume();
+        return PrimaryExpression();
+      }
+      return null;
+    }
+
     private ICollection<From> FromList()
     {
       Match(TokenType.K_FROM);
       var froms = new List<From>();
-      froms.Add(From(JoinType.PRIMARY));
+      froms.Add(From());
 
       while (IsJoin())
       {
@@ -175,14 +198,14 @@ namespace tsqlc.Parse
       return froms;
     }
 
-    private From From(JoinType type)
+    private From From(JoinType type = JoinType.PRIMARY, bool allowAlias = true)
     {
       if (Current != null && Current.Type == TokenType.OpenBracket)
       {
         Match(TokenType.OpenBracket);
         var subquery = Select();
         Match(TokenType.CloseBracket);
-        var alias = TableAlias();
+        var alias = allowAlias ? TableAlias() : string.Empty;
         return new SubqueryFrom
         {
           Join = type,
@@ -194,7 +217,7 @@ namespace tsqlc.Parse
       else
       {
         var reference = ReferenceExpression();
-        var alias = TableAlias();
+        var alias = allowAlias ? TableAlias() : string.Empty;
         if (Current != null && Current.Type == TokenType.K_WITH)
         {
           Consume();
@@ -269,7 +292,6 @@ namespace tsqlc.Parse
         alias = Current.Character;
         Consume();
       }
-      //TODO: Add table alias
       return alias;
     }
 
@@ -394,7 +416,7 @@ namespace tsqlc.Parse
       }
 
       var right = Expression();
-      return new ComparisonExpression { Left = left, Operator = op, Right = right };
+      return new ComparisonExpression { Left = left, Type = op, Right = right };
     }
 
     private BooleanExpression IsNullOrNotNull(Expression left)

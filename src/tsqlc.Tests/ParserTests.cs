@@ -48,5 +48,27 @@ namespace tsqlc.Tests
 
       //TODO: Finish unit test for where clause and and from list
     }
+
+    [TestMethod]
+    public void DeleteStatementAcidTest()
+    {
+      var sql = @"delete top (5) from x from xxxx x (TABLOCKX) where 1 = 2";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(DeleteStatement), statement.GetType(), "not a delete statement");
+      Assert.AreEqual(5, statement.TopExpression.Value, "top expression failed");
+
+      Assert.AreEqual("x", statement.Target.Name.Identifier, "invalid target");
+      Assert.AreEqual("xxxx", statement.FromList[0].Name.Identifier, "invalid from list");
+      Assert.AreEqual("x", statement.FromList[0].Alias, "invalid from list");
+
+      Assert.AreEqual(BooleanOperatorType.Equals, statement.WhereClause.Type, "invalid where clause");
+      Assert.AreEqual(2, statement.WhereClause.Right.Value, "invalid where clause");
+      Assert.AreEqual(1, statement.WhereClause.Left.Value, "invalid where clause");
+    }
   }
 }

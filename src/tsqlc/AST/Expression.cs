@@ -205,12 +205,12 @@ namespace tsqlc.AST
   public class ComparisonExpression : BooleanExpression
   {
     public Expression Left { get; set; }
-    public BooleanOperatorType Operator { get; set; }
+    public BooleanOperatorType Type { get; set; }
     public Expression Right { get; set; }
 
     public override string ToString()
     {
-      return string.Format("({0} (:e {1}) (:e {2}))", Operator, Left, Right);
+      return string.Format("({0} (:e {1}) (:e {2}))", Type, Left, Right);
     }
   }
 

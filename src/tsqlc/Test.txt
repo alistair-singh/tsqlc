@@ -1,5 +1,5 @@
 ﻿
-delete
+delete top 5 x from xxxx x (TABLOCKX) where 1 = 2
 
 
 begin
