@@ -55,6 +55,8 @@ namespace tsqlc.Parse
       {
         case TokenType.K_SELECT:
           return Select();
+        case TokenType.K_DELETE:
+          return Delete();
         case TokenType.K_IF:
           return If();
         case TokenType.K_BEGIN:
@@ -64,23 +66,29 @@ namespace tsqlc.Parse
       }
     }
 
-    private Statement Block()
+    private DeleteStatement Delete()
+    {
+      Match(TokenType.K_DELETE);
+      return new DeleteStatement { };
+    }
+
+    private BlockStatement Block()
     {
       Match(TokenType.K_BEGIN);
       var statements = new List<Statement>();
       while (Current != null && Current.Type != TokenType.K_END)
         statements.Add(NextStatement());
       Match(TokenType.K_END);
-      return new Block { Statements = statements };
+      return new BlockStatement { Statements = statements };
     }
 
-    private Statement If()
+    private IfStatement If()
     {
       Match(TokenType.K_IF);
       var test = BooleanExpression();
       var ifStatement = NextStatement();
       Statement elseStatement = null;
-      if(Current != null && Current.Type == TokenType.K_ELSE)
+      if (Current != null && Current.Type == TokenType.K_ELSE)
       {
         Consume();
         elseStatement = NextStatement();

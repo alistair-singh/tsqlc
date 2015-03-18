@@ -31,7 +31,7 @@ using System.Threading.Tasks;
 
 namespace tsqlc.AST
 {
-  public class Block : Statement
+  public class BlockStatement : Statement
   {
     public ICollection<Statement> Statements { get; set; }
   }

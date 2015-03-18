@@ -1,9 +1,16 @@
 ﻿
+delete
+
+
+begin
+select 1 as y
+end
+
 if test = test 
 begin
   select  top (100*10) *, NULL AS col1
   from    tb_test as t with (nolock) 
-          inner join tb_test2 t2 
+          inner join tb_test2 t2 (tablockx)
             on t1.id = t2.id
           join t3 on 1=2
           full join t3 on 0=3

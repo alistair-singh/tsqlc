@@ -41,7 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AST\Block.cs" />
+    <Compile Include="AST\BlockStatement.cs" />
     <Compile Include="AST\Column.cs" />
     <Compile Include="AST\DeleteStatement.cs" />
     <Compile Include="AST\Expression.cs" />

@@ -33,5 +33,9 @@ namespace tsqlc.AST
 {
   public class DeleteStatement : Statement
   {
+    public Expression TopExpression { get; set; }
+    public string TargetAlias { get; set; }
+    public ICollection<From> FromList { get; set; }
+    public BooleanExpression WhereClause { get; set; }
   }
 }
