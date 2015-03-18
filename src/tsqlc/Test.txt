@@ -1,6 +1,7 @@
 ﻿
-delete top 5 x from xxxx x (TABLOCKX) where 1 = 2
 
+while @@Rowcount <> 0
+  delete top 5 x from xxxx x (TABLOCKX) where 1 = 2
 
 begin
 select 1 as y

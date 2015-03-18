@@ -61,9 +61,19 @@ namespace tsqlc.Parse
           return If();
         case TokenType.K_BEGIN:
           return Block();
+        case TokenType.K_WHILE:
+          return While();
         default:
           return new SelectStatement { ColumnList = new List<Column>() { new ExpressionColumn { Expression = BooleanExpression() } } };
       }
+    }
+
+    private Statement While()
+    {
+      Match(TokenType.K_WHILE);
+      var test = BooleanExpression();
+      var body = NextStatement();
+      return new WhileStatement { Test = test, Body = body };
     }
 
     private DeleteStatement Delete()
@@ -106,7 +116,7 @@ namespace tsqlc.Parse
         Consume();
         elseStatement = NextStatement();
       }
-      return new IfStatement { Test = test, If = ifStatement, Else = elseStatement };
+      return new IfStatement { Test = test, TrueBody = ifStatement, FalseBody = elseStatement };
     }
 
     private SelectStatement Select()

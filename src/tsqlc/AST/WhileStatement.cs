@@ -31,10 +31,9 @@ using System.Threading.Tasks;
 
 namespace tsqlc.AST
 {
-  public class IfStatement : Statement
+  public class WhileStatement : Statement
   {
     public BooleanExpression Test { get; set; }
-    public Statement TrueBody { get; set; }
-    public Statement FalseBody { get; set; }
+    public Statement Body { get; set; }
   }
 }
