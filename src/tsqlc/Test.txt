@@ -13,6 +13,7 @@ from    tb_test as t with (nolock)
 where   name like 'alistair%'
         and name is not null
         or age is null
+        or not age is null
 
 3=3 OR 1=1 AND 2=2 AND 3=3 OR 4=4
 
