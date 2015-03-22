@@ -57,6 +57,8 @@ namespace tsqlc.Parse
           return Select();
         case TokenType.K_DELETE:
           return Delete();
+        case TokenType.K_UPDATE:
+          return Update();
         case TokenType.K_IF:
           return If();
         case TokenType.K_BEGIN:
@@ -64,8 +66,26 @@ namespace tsqlc.Parse
         case TokenType.K_WHILE:
           return While();
         default:
-          return new SelectStatement { ColumnList = new List<Column>() { new ExpressionColumn { Expression = BooleanExpression() } } };
+          throw Unexpected();
       }
+    }
+
+    private Statement Update()
+    {
+      Match(TokenType.K_UPDATE);
+      var top = Top();
+
+      var target = From(allowAlias: false);
+
+      Match(TokenType.K_SET);
+
+      var where = Where();
+      return new UpdateStatement
+      {
+        TopExpression = top,
+        Target = target,
+        WhereClause = where
+      };
     }
 
     private Statement While()
@@ -81,25 +101,28 @@ namespace tsqlc.Parse
       Match(TokenType.K_DELETE);
       var top = Top();
 
-      if (Current != null && Current.Type == TokenType.K_FROM)
-      {
-        Consume();
-      }
+      Consume(TokenType.K_FROM);
       var target = From(allowAlias: false);
 
       ICollection<From> fromList = null;
-      if (Current != null && Current.Type == TokenType.K_FROM)
+      if (CurrentTypeIs(TokenType.K_FROM))
         fromList = FromList();
 
       var where = Where();
-      return new DeleteStatement { TopExpression = top, Target = target, FromList = fromList, WhereClause = where };
+      return new DeleteStatement
+      {
+        TopExpression = top,
+        Target = target,
+        FromList = fromList,
+        WhereClause = where
+      };
     }
 
     private BlockStatement Block()
     {
       Match(TokenType.K_BEGIN);
       var statements = new List<Statement>();
-      while (Current != null && Current.Type != TokenType.K_END)
+      while (!CurrentTypeIs(TokenType.K_END))
         statements.Add(NextStatement());
       Match(TokenType.K_END);
       return new BlockStatement { Statements = statements };
@@ -109,14 +132,18 @@ namespace tsqlc.Parse
     {
       Match(TokenType.K_IF);
       var test = BooleanExpression();
-      var ifStatement = NextStatement();
-      Statement elseStatement = null;
-      if (Current != null && Current.Type == TokenType.K_ELSE)
+      var trueBody = NextStatement();
+
+      Statement falseBody = null;
+      if (Consume(TokenType.K_ELSE))
+        falseBody = NextStatement();
+
+      return new IfStatement
       {
-        Consume();
-        elseStatement = NextStatement();
-      }
-      return new IfStatement { Test = test, TrueBody = ifStatement, FalseBody = elseStatement };
+        Test = test,
+        TrueBody = trueBody,
+        FalseBody = falseBody
+      };
     }
 
     private SelectStatement Select()
@@ -127,7 +154,7 @@ namespace tsqlc.Parse
       var columns = ColumnList();
 
       ICollection<From> froms = null;
-      if (Current != null && Current.Type == TokenType.K_FROM)
+      if (CurrentTypeIs(TokenType.K_FROM))
         froms = FromList();
 
       var whereClause = Where();
@@ -143,31 +170,27 @@ namespace tsqlc.Parse
 
     private BooleanExpression Where()
     {
-      if (Current != null && Current.Type == TokenType.K_WHERE)
-      {
-        Consume();
+      if (Consume(TokenType.K_WHERE))
         return BooleanExpression();
-      }
 
       return null;
     }
 
     private Expression Top()
     {
-      if (Current != null && Current.Type == TokenType.K_TOP)
-      {
-        Consume();
+      if (Consume(TokenType.K_TOP))
         return PrimaryExpression();
-      }
+
       return null;
     }
 
     private ICollection<From> FromList()
     {
-      Match(TokenType.K_FROM);
       var froms = new List<From>();
-      froms.Add(From());
+      if (!Consume(TokenType.K_FROM))
+        return froms;
 
+      froms.Add(From());
       while (IsJoin())
       {
         switch (Current.Type)
@@ -290,14 +313,13 @@ namespace tsqlc.Parse
     private string TableAlias()
     {
       string alias = string.Empty;
-      if (Current != null && Current.Type == TokenType.K_AS)
+      if (Consume(TokenType.K_AS))
       {
-        Consume();
-        if (Current == null || Current.Type != TokenType.Identifier)
-          throw Unexpected(Current);
+        if (!CurrentTypeIs(TokenType.Identifier))
+          throw Unexpected();
       }
 
-      if (Current != null && Current.Type == TokenType.Identifier)
+      if (CurrentTypeIs(TokenType.Identifier))
       {
         alias = Current.Character;
         Consume();
@@ -308,35 +330,31 @@ namespace tsqlc.Parse
     private ICollection<Column> ColumnList()
     {
       var columns = new List<Column>();
-      columns.Add(Column());
-      while (Current != null && Current.Type == TokenType.Comma)
-      {
-        Match(TokenType.Comma);
+      do
         columns.Add(Column());
-      }
+      while (Consume(TokenType.Comma));
+
       return columns;
     }
 
     private Column Column()
     {
-      if (Current.Type == TokenType.StarOp)
-      {
-        Consume();
+      if (Consume(TokenType.StarOp))
         return new StarColumn { };
-      }
 
-      if (Current.Type == TokenType.Identifier || Current.Type == TokenType.VarcharConstant)
-      {
-        var token = Current;
-        Consume();
-        if (Current.Type == TokenType.AssignOp)
-        {
-          var column = new ExpressionColumn { Alias = token.Character };
-          Consume();
-          column.Expression = Expression();
-          return column;
-        }
-      }
+      //TODO: buggy code dont support it for now
+      //if (Current != null && Current.Type == TokenType.Identifier || Current.Type == TokenType.VarcharConstant)
+      //{
+      //  var token = Current;
+      //  Consume();
+      //  if (Current != null && Current.Type == TokenType.AssignOp)
+      //  {
+      //    var column = new ExpressionColumn { Alias = token.Character };
+      //    Consume();
+      //    column.Expression = Expression();
+      //    return column;
+      //  }
+      //}
 
       var expression = Expression();
       var optional = true;
@@ -381,30 +399,28 @@ namespace tsqlc.Parse
 
     private BooleanExpression PrimaryBooleanExpression()
     {
-      if (Current.Type == TokenType.K_NOT)
-      {
-        Consume();
-        var booleanExpression = PrimaryBooleanExpression();
-        return new BooleanNotExpresison { Right = booleanExpression };
-      }
+      if (Consume(TokenType.K_NOT))
+        return new BooleanNotExpresison
+        {
+          Right = PrimaryBooleanExpression()
+        };
 
-      if (Current.Type == TokenType.K_EXISTS)
+      if (CurrentTypeIs(TokenType.K_EXISTS))
         return BooleanExists();
 
       var left = Expression();
 
-      if (Current.Type == TokenType.K_BETWEEN)
+      if (CurrentTypeIs(TokenType.K_BETWEEN))
         return BooleanBetween(left);
 
-      if (Current.Type == TokenType.K_IN)
+      if (CurrentTypeIs(TokenType.K_IN))
         return BooleanIn(left);
 
-      if (Current.Type == TokenType.K_IS)
+      if (CurrentTypeIs(TokenType.K_IS))
         return IsNullOrNotNull(left);
 
-      if (Current.Type == TokenType.K_NOT)
+      if (Consume(TokenType.K_NOT))
       {
-        Consume();
         switch (Current.Type)
         {
           case TokenType.K_IN:
@@ -432,12 +448,7 @@ namespace tsqlc.Parse
     private BooleanExpression IsNullOrNotNull(Expression left)
     {
       Match(TokenType.K_IS);
-      var isNull = true;
-      if (Current != null && Current.Type == TokenType.K_NOT)
-      {
-        isNull = false;
-        Consume();
-      }
+      var isNull = !Consume(TokenType.K_NOT);
       Match(TokenType.K_NULL);
       return new NullComparisonExpression { IsNull = isNull, Left = left };
     }
@@ -470,7 +481,7 @@ namespace tsqlc.Parse
     {
       Match(TokenType.K_IN);
       Match(TokenType.OpenBracket);
-      if (Current.Type == TokenType.K_SELECT)
+      if (CurrentTypeIs(TokenType.K_SELECT))
       {
         var subquery = Select();
         Match(TokenType.CloseBracket);
@@ -478,12 +489,10 @@ namespace tsqlc.Parse
       }
 
       var list = new List<Expression>();
-      list.Add(Expression());
-      while (Current != null && Current.Type == TokenType.Comma)
-      {
-        Consume();
+      do
         list.Add(Expression());
-      }
+      while (Consume(TokenType.Comma));
+
       Match(TokenType.CloseBracket);
       return new BooleanInListExpression { Not = not, Left = left, List = list };
     }
@@ -503,31 +512,28 @@ namespace tsqlc.Parse
         return Constant();
       else if (IsUnaryOp())
         return UnaryOp();
-      else if (Current != null && Current.Type == TokenType.K_NULL)
+      else if (CurrentTypeIs(TokenType.K_NULL))
         return NullExpression();
       else if (IsReference())
       {
         var reference = ReferenceExpression();
-        if (Current != null && Current.Type == TokenType.OpenBracket)
+        if (CurrentTypeIs(TokenType.OpenBracket))
           return FunctionCall(reference);
         else
           return reference;
       }
-      else if (Current.Type == TokenType.OpenBracket)
+      else if (Consume(TokenType.OpenBracket))
       {
-        Consume();
         Expression expression;
-        if (Current.Type == TokenType.K_SELECT)
+        if (CurrentTypeIs(TokenType.K_SELECT))
           expression = new SelectStatementExpression { Statement = Select() };
         else
           expression = Expression();
 
-        if (Current.Type != TokenType.CloseBracket)
-          throw Expected(")");
-        Consume();
+        Match(TokenType.CloseBracket);
         return expression;
       }
-      else throw Unexpected(Current);
+      else throw Unexpected();
     }
 
     private NullExpression NullExpression()
@@ -538,8 +544,7 @@ namespace tsqlc.Parse
 
     private Expression Expression()
     {
-      var exp = PrimaryExpression();
-      return Expression(exp, 1);
+      return Expression(PrimaryExpression(), 1);
     }
 
     private Expression Expression(Expression left, int minPrecedence)
@@ -564,13 +569,13 @@ namespace tsqlc.Parse
       TokenType previous = TokenType.ReferenceOp;
       while (IsReference() && previous != TokenType.Identifier)
       {
-        if (Current.Type == TokenType.ReferenceOp && previous == TokenType.ReferenceOp)
+        if (CurrentTypeIs(TokenType.ReferenceOp) && previous == TokenType.ReferenceOp)
         {
           parts.Add(string.Empty);
           Consume();
         }
 
-        if (Current.Type == TokenType.Identifier)
+        if (CurrentTypeIs(TokenType.Identifier))
         {
           parts.Add(Current.Character);
           Consume();
@@ -586,16 +591,12 @@ namespace tsqlc.Parse
     {
       Match(TokenType.OpenBracket);
       var parameters = new List<Expression>();
-      if (Current.Type == TokenType.CloseBracket)
+      if (CurrentTypeIs(TokenType.CloseBracket))
         return new FunctionCallExpression { Function = reference, Parameters = parameters };
 
-      parameters.Add(Expression());
-
-      while (Current.Type == TokenType.Comma)
-      {
-        Consume();
+      do
         parameters.Add(Expression());
-      }
+      while (Consume(TokenType.Comma));
 
       Match(TokenType.CloseBracket);
       return new FunctionCallExpression { Function = reference, Parameters = parameters };
@@ -603,9 +604,13 @@ namespace tsqlc.Parse
 
     private UnaryExpression UnaryOp()
     {
-      var op = Current;
       UnaryType type;
-      switch (op.Type)
+      var tokenType = CurrentIs(TokenType.AddOp, TokenType.SubtractOp, TokenType.BitwiseNotOp);
+
+      if (!tokenType.HasValue)
+        throw Unexpected();
+ 
+      switch (tokenType)
       {
         case TokenType.AddOp:
           type = UnaryType.Positive;
@@ -617,36 +622,51 @@ namespace tsqlc.Parse
           type = UnaryType.BitwiseNot;
           break;
         default:
-          throw Unexpected(op);
+          throw Unexpected();
       }
       Consume();
-      return new UnaryExpression { Type = type, Right = PrimaryExpression() };
+      return new UnaryExpression { Type = type, Right = Expression() };
     }
 
     private ConstantExpression Constant()
     {
       //TODO: Record precision and scale of numeric, length of character data
-      var constant = Current;
-      Consume();
-      switch (constant.Type)
+      var type = CurrentIs(TokenType.IntConstant, TokenType.BigIntConstant, TokenType.FloatConstant,
+        TokenType.NumericConstant, TokenType.NvarcharConstant, TokenType.RealConstant, TokenType.VarcharConstant);
+
+      if (!type.HasValue)
+        throw Unexpected();
+
+      ConstantExpression expression;
+      switch (type)
       {
         case TokenType.IntConstant:
-          return new ConstantExpression { Type = SqlType.Int, Value = constant.Int };
+          expression = new ConstantExpression { Type = SqlType.Int, Value = Current.Int };
+          break;
         case TokenType.BigIntConstant:
-          return new ConstantExpression { Type = SqlType.BigInt, Value = constant.BigInt };
+          expression = new ConstantExpression { Type = SqlType.BigInt, Value = Current.BigInt };
+          break;
         case TokenType.FloatConstant:
-          return new ConstantExpression { Type = SqlType.Float, Value = constant.Real };
+          expression = new ConstantExpression { Type = SqlType.Float, Value = Current.Real };
+          break;
         case TokenType.NumericConstant:
-          return new ConstantExpression { Type = SqlType.Numeric, Value = constant.Numeric };
+          expression = new ConstantExpression { Type = SqlType.Numeric, Value = Current.Numeric };
+          break;
         case TokenType.NvarcharConstant:
-          return new ConstantExpression { Type = SqlType.NVarchar, Value = constant.Character };
+          expression = new ConstantExpression { Type = SqlType.NVarchar, Value = Current.Character };
+          break;
         case TokenType.RealConstant:
-          return new ConstantExpression { Type = SqlType.Real, Value = constant.Real };
+          expression = new ConstantExpression { Type = SqlType.Real, Value = Current.Real };
+          break;
         case TokenType.VarcharConstant:
-          return new ConstantExpression { Type = SqlType.Varchar, Value = constant.Character };
+          expression = new ConstantExpression { Type = SqlType.Varchar, Value = Current.Character };
+          break;
         default:
-          throw Expected("Constant");
+          throw Unexpected();
       }
+
+      Consume();
+      return expression;
     }
 
     private BooleanOperatorType BooleanOperator()
@@ -752,89 +772,98 @@ namespace tsqlc.Parse
       return type;
     }
 
-    private void Next()
-    {
-      if (!_tokens.MoveNext())
-        throw Unexpected(new Token { Type = TokenType.EndOfFile });
-    }
-
     private void Match(TokenType type)
     {
-      if (Current == null || Current.Type != type)
+      if (!Consume(type))
         throw Expected(type.ToString());
-      Consume();
     }
 
-    private void TerminateIfEndOfFile(TokenType type)
+    private bool Consume(TokenType? type = null)
+    {
+      if (type.HasValue)
+      {
+        if (CurrentTypeIs(type.Value))
+        {
+           _tokens.MoveNext();
+           return true;
+        }
+        return false;
+      }
+      return _tokens.MoveNext();
+    }
+
+    private bool CurrentTypeIs(TokenType type)
+    {
+      return null != CurrentIs(type);
+    }
+
+    private TokenType? CurrentIs(IEnumerable<TokenType> types)
     {
       if (Current == null)
-        throw Expected(type.ToString());
+        return null;
+
+      if (types.Any(x => x == Current.Type))
+        return Current.Type;
+
+      return null;
     }
 
-    private bool Consume()
+    private TokenType? CurrentIs(params TokenType[] types)
     {
-      return _tokens.MoveNext();
+      return CurrentIs(types.AsEnumerable());
     }
 
     private bool IsJoin()
     {
-      return Current != null &&
-        (TokenType.K_LEFT == Current.Type ||
-        TokenType.K_RIGHT == Current.Type ||
-        TokenType.K_INNER == Current.Type ||
-        TokenType.K_JOIN == Current.Type ||
-        TokenType.K_FULL == Current.Type);
+      return null != CurrentIs(TokenType.K_LEFT, TokenType.K_RIGHT,
+        TokenType.K_INNER, TokenType.K_JOIN, TokenType.K_FULL);
     }
 
     private bool IsConstant()
     {
-      var type = Current.Type;
-      return type == TokenType.IntConstant ||
-        type == TokenType.BigIntConstant ||
-        type == TokenType.FloatConstant ||
-        type == TokenType.NumericConstant ||
-        type == TokenType.NvarcharConstant ||
-        type == TokenType.RealConstant ||
-        type == TokenType.VarcharConstant;
+      return null != CurrentIs(TokenType.IntConstant, TokenType.BigIntConstant,
+        TokenType.FloatConstant, TokenType.NumericConstant, TokenType.NvarcharConstant,
+        TokenType.RealConstant, TokenType.VarcharConstant);
     }
 
     private bool IsUnaryOp()
     {
-      var type = _tokens.Current.Type;
-      return type == TokenType.AddOp ||
-        type == TokenType.SubtractOp ||
-        type == TokenType.BitwiseNotOp;
+      return null != CurrentIs(TokenType.AddOp, TokenType.SubtractOp, TokenType.BitwiseNotOp);
     }
 
     private bool IsReference()
     {
-      if (Current == null)
-        return false;
-      var type = Current.Type;
-      return type == TokenType.Identifier || type == TokenType.ReferenceOp;
+      return null != CurrentIs(TokenType.Identifier, TokenType.ReferenceOp);
     }
 
     private bool IsBinaryOp()
     {
-      return Current != null && (Current.Type == TokenType.DivideOp || Current.Type == TokenType.StarOp ||
-        Current.Type == TokenType.ModuloOp || Current.Type == TokenType.AddOp ||
-        Current.Type == TokenType.SubtractOp || Current.Type == TokenType.BitwiseAndOp ||
-        Current.Type == TokenType.BitwiseXorOp || Current.Type == TokenType.BitwiseOrOp);
+      return null != CurrentIs(TokenType.DivideOp, TokenType.StarOp, TokenType.ModuloOp,
+        TokenType.AddOp, TokenType.SubtractOp, TokenType.BitwiseAndOp, TokenType.BitwiseXorOp,
+        TokenType.BitwiseOrOp);
     }
 
     private bool IsBooleanOp()
     {
-      return Current != null && (Current.Type == TokenType.K_AND || Current.Type == TokenType.K_OR);
+      return null != CurrentIs(TokenType.K_AND, TokenType.K_OR);
     }
 
-    private Exception Unexpected(Token token)
+    private Exception Unexpected(Token token = null)
     {
-      return new Exception(string.Format("`{0}` unexpected at line {1} char {2}.", token.Type, token.Line, token.Column));
+      if (token == null)
+        token = Current;
+
+      if (token == null)
+        return new Exception("Unexpected end of file.");
+
+      return new Exception(string.Format("`{0}` unexpected at line {1} char {2}.", token.Type, token.Line,
+        token.Column));
     }
 
     private Exception Expected(string expected)
     {
-      return new Exception(string.Format("'{0}' expected at line {2} char {3}. Found `{1}`", expected, Current.Type, Current.Line, Current.Column));
+      return new Exception(string.Format("'{0}' expected at line {2} char {3}. Found `{1}`", expected, Current.Type,
+        Current.Line, Current.Column));
     }
 
     #region IEnumerator<Statement>

@@ -150,5 +150,24 @@ namespace tsqlc.Tests
       Assert.AreEqual(2, statement.WhereClause.Right.Value, "invalid where clause");
       Assert.AreEqual(1, statement.WhereClause.Left.Value, "invalid where clause");
     }
+
+    [TestMethod]
+    public void UpdateStatementBasic()
+    {
+      var sql = @"update top 5 dbo.xxx set val1 = 1, val2 = 3 where val2 <> 4";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(UpdateStatement), statement.GetType(), "not a delete statement");
+      Assert.AreEqual(5, statement.TopExpression.Value, "top expression failed");
+
+      Assert.AreEqual(statement.Target.Name.Identifier, "xxx", "incorrect identifier");
+      Assert.AreEqual(statement.Where.Left.Identifer, "val2", "incorrect where clause");
+      Assert.AreEqual(statement.Where.Right.Value, 4, "incorrect where clause");
+      Assert.AreEqual(statement.Where.Type, BooleanOperatorType.NotEqual, "incorrect where clause");
+    }
   }
 }
