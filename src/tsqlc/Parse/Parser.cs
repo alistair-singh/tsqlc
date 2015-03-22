@@ -79,13 +79,35 @@ namespace tsqlc.Parse
 
       Match(TokenType.K_SET);
 
+      var setColumns = SetColumnList();
+      var froms = FromList();
       var where = Where();
+
       return new UpdateStatement
       {
         TopExpression = top,
         Target = target,
+        SetColumnList = setColumns,
         WhereClause = where
       };
+    }
+
+    private ICollection<SetExpressionColumn> SetColumnList()
+    {
+      var columns = new List<SetExpressionColumn>();
+      do
+      {
+        var reference = ReferenceExpression();
+        Match(TokenType.AssignOp);
+        var expression = Expression();
+        columns.Add(new SetExpressionColumn
+        {
+          SetReference = reference,
+          SetExpression = expression
+        });
+      }
+      while (Consume(TokenType.Comma));
+      return columns;
     }
 
     private Statement While()
@@ -102,13 +124,11 @@ namespace tsqlc.Parse
       var top = Top();
 
       Consume(TokenType.K_FROM);
+
       var target = From(allowAlias: false);
-
-      ICollection<From> fromList = null;
-      if (CurrentTypeIs(TokenType.K_FROM))
-        fromList = FromList();
-
+      var fromList = FromList();
       var where = Where();
+
       return new DeleteStatement
       {
         TopExpression = top,
@@ -152,11 +172,7 @@ namespace tsqlc.Parse
 
       var top = Top();
       var columns = ColumnList();
-
-      ICollection<From> froms = null;
-      if (CurrentTypeIs(TokenType.K_FROM))
-        froms = FromList();
-
+      var froms = FromList();
       var whereClause = Where();
 
       return new SelectStatement
@@ -342,7 +358,7 @@ namespace tsqlc.Parse
       if (Consume(TokenType.StarOp))
         return new StarColumn { };
 
-      //TODO: buggy code dont support it for now
+      //TODO: buggy code dont support it for now, might need to implement back tracking
       //if (Current != null && Current.Type == TokenType.Identifier || Current.Type == TokenType.VarcharConstant)
       //{
       //  var token = Current;
@@ -357,14 +373,9 @@ namespace tsqlc.Parse
       //}
 
       var expression = Expression();
-      var optional = true;
-      if (Current != null && Current.Type == TokenType.K_AS)
-      {
-        Match(TokenType.K_AS);
-        optional = false;
-      }
+      var optional = !Consume(TokenType.K_AS);
 
-      if (Current != null && (Current.Type == TokenType.Identifier || Current.Type == TokenType.VarcharConstant))
+      if (CurrentIs(TokenType.Identifier, TokenType.VarcharConstant).HasValue)
       {
         var column = new ExpressionColumn { Expression = expression, Alias = Current.Character };
         Consume();
@@ -565,11 +576,9 @@ namespace tsqlc.Parse
     private ReferenceExpression ReferenceExpression()
     {
       var parts = new List<string>(ReferenceListInitializationSize);
-
-      TokenType previous = TokenType.ReferenceOp;
-      while (IsReference() && previous != TokenType.Identifier)
+      do
       {
-        if (CurrentTypeIs(TokenType.ReferenceOp) && previous == TokenType.ReferenceOp)
+        while (CurrentTypeIs(TokenType.ReferenceOp))
         {
           parts.Add(string.Empty);
           Consume();
@@ -580,10 +589,9 @@ namespace tsqlc.Parse
           parts.Add(Current.Character);
           Consume();
         }
-
-        previous = Current.Type;
-      }
-
+        else
+          throw Unexpected();
+      } while (Consume(TokenType.ReferenceOp));
       return new ReferenceExpression { IdentifierParts = parts };
     }
 
@@ -609,7 +617,7 @@ namespace tsqlc.Parse
 
       if (!tokenType.HasValue)
         throw Unexpected();
- 
+
       switch (tokenType)
       {
         case TokenType.AddOp:
@@ -784,8 +792,8 @@ namespace tsqlc.Parse
       {
         if (CurrentTypeIs(type.Value))
         {
-           _tokens.MoveNext();
-           return true;
+          _tokens.MoveNext();
+          return true;
         }
         return false;
       }
@@ -794,7 +802,7 @@ namespace tsqlc.Parse
 
     private bool CurrentTypeIs(TokenType type)
     {
-      return null != CurrentIs(type);
+      return CurrentIs(type).HasValue;
     }
 
     private TokenType? CurrentIs(IEnumerable<TokenType> types)
@@ -815,37 +823,37 @@ namespace tsqlc.Parse
 
     private bool IsJoin()
     {
-      return null != CurrentIs(TokenType.K_LEFT, TokenType.K_RIGHT,
-        TokenType.K_INNER, TokenType.K_JOIN, TokenType.K_FULL);
+      return CurrentIs(TokenType.K_LEFT, TokenType.K_RIGHT,
+        TokenType.K_INNER, TokenType.K_JOIN, TokenType.K_FULL).HasValue;
     }
 
     private bool IsConstant()
     {
-      return null != CurrentIs(TokenType.IntConstant, TokenType.BigIntConstant,
+      return CurrentIs(TokenType.IntConstant, TokenType.BigIntConstant,
         TokenType.FloatConstant, TokenType.NumericConstant, TokenType.NvarcharConstant,
-        TokenType.RealConstant, TokenType.VarcharConstant);
+        TokenType.RealConstant, TokenType.VarcharConstant).HasValue;
     }
 
     private bool IsUnaryOp()
     {
-      return null != CurrentIs(TokenType.AddOp, TokenType.SubtractOp, TokenType.BitwiseNotOp);
+      return CurrentIs(TokenType.AddOp, TokenType.SubtractOp, TokenType.BitwiseNotOp).HasValue;
     }
 
     private bool IsReference()
     {
-      return null != CurrentIs(TokenType.Identifier, TokenType.ReferenceOp);
+      return CurrentIs(TokenType.Identifier, TokenType.ReferenceOp).HasValue;
     }
 
     private bool IsBinaryOp()
     {
-      return null != CurrentIs(TokenType.DivideOp, TokenType.StarOp, TokenType.ModuloOp,
+      return CurrentIs(TokenType.DivideOp, TokenType.StarOp, TokenType.ModuloOp,
         TokenType.AddOp, TokenType.SubtractOp, TokenType.BitwiseAndOp, TokenType.BitwiseXorOp,
-        TokenType.BitwiseOrOp);
+        TokenType.BitwiseOrOp).HasValue;
     }
 
     private bool IsBooleanOp()
     {
-      return null != CurrentIs(TokenType.K_AND, TokenType.K_OR);
+      return CurrentIs(TokenType.K_AND, TokenType.K_OR).HasValue;
     }
 
     private Exception Unexpected(Token token = null)

@@ -30,7 +30,13 @@ using System.Text;
 
 namespace tsqlc.AST
 {
-  public class Column {}
+  public class Column { }
+
+  public class SetExpressionColumn : Column
+  {
+    public ReferenceExpression SetReference { get; set; }
+    public Expression SetExpression { get; set; }
+  }
 
   public class StarColumn : Column
   {

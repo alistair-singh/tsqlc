@@ -50,6 +50,25 @@ namespace tsqlc.Tests
     }
 
     [TestMethod]
+    public void SelectReferenceTest()
+    {
+      var sql = @"select x.x.x.x, xxx.xxx, ......x. x  . x, x . x. x.  x";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(SelectStatement), statement.GetType(), "not a select statement");
+      Assert.AreEqual(statement.ColumnList.Count, 4, "must have x columns");
+
+      Assert.AreEqual("x.x.x.x", statement.ColumnList[0].Expression.Identifier, "reference not equal");
+      Assert.AreEqual("xxx.xxx", statement.ColumnList[1].Expression.Identifier, "reference not equal");
+      Assert.AreEqual("......x.x.x", statement.ColumnList[2].Expression.Identifier, "reference not equal");
+      Assert.AreEqual("x.x.x.x", statement.ColumnList[3].Expression.Identifier, "reference not equal");
+    }
+
+    [TestMethod]
     public void SelectStatementSingleColumnNoFromTest()
     {
       var sql = @"select 1 as col1";
@@ -82,11 +101,11 @@ namespace tsqlc.Tests
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
       Assert.AreEqual(typeof(IfStatement), statement.GetType(), "not a statement type");
 
-      Assert.IsTrue(statement.Test.Left.Value == 1 && 
-        statement.Test.Right.Value == 0 && 
+      Assert.IsTrue(statement.Test.Left.Value == 1 &&
+        statement.Test.Right.Value == 0 &&
         statement.Test.Type == BooleanOperatorType.Equals);
 
-      Assert.IsTrue(statement.TrueBody != null && 
+      Assert.IsTrue(statement.TrueBody != null &&
         statement.FalseBody != null);
     }
 
@@ -102,11 +121,11 @@ namespace tsqlc.Tests
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
       Assert.AreEqual(typeof(IfStatement), statement.GetType(), "not a statement type");
 
-      Assert.IsTrue(statement.Test.Left.Value == 1 && 
-        statement.Test.Right.Value == 0 && 
+      Assert.IsTrue(statement.Test.Left.Value == 1 &&
+        statement.Test.Right.Value == 0 &&
         statement.Test.Type == BooleanOperatorType.Equals);
 
-      Assert.IsTrue(statement.TrueBody != null && 
+      Assert.IsTrue(statement.TrueBody != null &&
         statement.FalseBody == null);
     }
 
@@ -122,8 +141,8 @@ namespace tsqlc.Tests
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
       Assert.AreEqual(typeof(WhileStatement), statement.GetType(), "not a statement type");
 
-      Assert.IsTrue(statement.Test.Left.Value == 1 && 
-        statement.Test.Right.Value == 1 && 
+      Assert.IsTrue(statement.Test.Left.Value == 1 &&
+        statement.Test.Right.Value == 1 &&
         statement.Test.Type == BooleanOperatorType.Equals);
 
       Assert.IsTrue(statement.Body != null);
@@ -164,10 +183,10 @@ namespace tsqlc.Tests
       Assert.AreEqual(typeof(UpdateStatement), statement.GetType(), "not a delete statement");
       Assert.AreEqual(5, statement.TopExpression.Value, "top expression failed");
 
-      Assert.AreEqual(statement.Target.Name.Identifier, "xxx", "incorrect identifier");
-      Assert.AreEqual(statement.Where.Left.Identifer, "val2", "incorrect where clause");
-      Assert.AreEqual(statement.Where.Right.Value, 4, "incorrect where clause");
-      Assert.AreEqual(statement.Where.Type, BooleanOperatorType.NotEqual, "incorrect where clause");
+      Assert.AreEqual(statement.Target.Name.Identifier, "dbo.xxx", "incorrect identifier");
+      Assert.AreEqual(statement.WhereClause.Left.Identifier, "val2", "incorrect where clause");
+      Assert.AreEqual(statement.WhereClause.Right.Value, 4, "incorrect where clause");
+      Assert.AreEqual(statement.WhereClause.Type, BooleanOperatorType.NotEqual, "incorrect where clause");
     }
   }
 }
