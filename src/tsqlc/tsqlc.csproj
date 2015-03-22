@@ -46,6 +46,7 @@
     <Compile Include="AST\DeleteStatement.cs" />
     <Compile Include="AST\Expression.cs" />
     <Compile Include="AST\From.cs" />
+    <Compile Include="AST\InsertStatement.cs" />
     <Compile Include="AST\UpdateStatement.cs" />
     <Compile Include="AST\WhileStatement.cs" />
     <Compile Include="AST\IfStatement.cs" />

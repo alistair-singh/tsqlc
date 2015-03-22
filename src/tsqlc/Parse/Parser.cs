@@ -59,6 +59,8 @@ namespace tsqlc.Parse
           return Delete();
         case TokenType.K_UPDATE:
           return Update();
+        case TokenType.K_INSERT:
+          return Insert();
         case TokenType.K_IF:
           return If();
         case TokenType.K_BEGIN:
@@ -70,12 +72,89 @@ namespace tsqlc.Parse
       }
     }
 
-    private Statement Update()
+    private InsertStatement Insert()
+    {
+      Match(TokenType.K_INSERT);
+      var top = Top();
+      Consume(TokenType.K_INTO);
+      var target = From(allowAlias: false, allowOnClause: false);
+      var columnSpecifier = ColumnListSpecification();
+
+      if (CurrentTypeIs(TokenType.K_VALUES))
+      {
+        var values = Values();
+        return new ValuesInsertStatement
+        {
+          TopExpression = top,
+          Target = target,
+          ColumnSpecification = columnSpecifier,
+          Values = values
+        };
+      }
+      else if (CurrentTypeIs(TokenType.K_SELECT))
+      {
+        var select = Select();
+        return new SelectInsertStatement
+        {
+          TopExpression = top,
+          Target = target,
+          ColumnSpecification = columnSpecifier,
+          SelectStatement = select
+        };
+      }
+      throw Unexpected();
+    }
+
+    private Values Values()
+    {
+      Match(TokenType.K_VALUES);
+      var rows = new List<ValuesRow>();
+      do
+        rows.Add(ValuesRow());
+      while (Consume(TokenType.Comma));
+
+      return new Values
+      {
+        Rows = rows
+      };
+    }
+
+    private ValuesRow ValuesRow()
+    {
+      Match(TokenType.OpenBracket);
+
+      var expression = new List<Expression>();
+      do
+        expression.Add(Expression());
+      while (Consume(TokenType.Comma));
+
+      Match(TokenType.CloseBracket);
+      return new ValuesRow
+      {
+        Expressions = expression
+      };
+    }
+
+    private ICollection<ReferenceExpression> ColumnListSpecification()
+    {
+      var list = new List<ReferenceExpression>();
+      if (!Consume(TokenType.OpenBracket))
+        return list;
+
+      do
+        list.Add(ReferenceExpression());
+      while (Consume(TokenType.Comma));
+
+      Match(TokenType.CloseBracket);
+      return list;
+    }
+
+    private UpdateStatement Update()
     {
       Match(TokenType.K_UPDATE);
       var top = Top();
 
-      var target = From(allowAlias: false);
+      var target = From(allowAlias: false, allowOnClause: false);
 
       Match(TokenType.K_SET);
 
@@ -111,7 +190,7 @@ namespace tsqlc.Parse
       return columns;
     }
 
-    private Statement While()
+    private WhileStatement While()
     {
       Match(TokenType.K_WHILE);
       var test = BooleanExpression();
@@ -126,7 +205,7 @@ namespace tsqlc.Parse
 
       Consume(TokenType.K_FROM);
 
-      var target = From(allowAlias: false);
+      var target = From(allowAlias: false, allowOnClause: false);
       var fromList = FromList();
       var where = Where();
 
@@ -223,22 +302,19 @@ namespace tsqlc.Parse
             break;
           case TokenType.K_LEFT:
             Match(TokenType.K_LEFT);
-            if (Current != null && Current.Type == TokenType.K_OUTER)
-              Consume();
+            Consume(TokenType.K_OUTER);
             Match(TokenType.K_JOIN);
             froms.Add(From(JoinType.LEFT));
             break;
           case TokenType.K_RIGHT:
             Match(TokenType.K_RIGHT);
-            if (Current != null && Current.Type == TokenType.K_OUTER)
-              Consume();
+            Consume(TokenType.K_OUTER);
             Match(TokenType.K_JOIN);
             froms.Add(From(JoinType.RIGHT));
             break;
           case TokenType.K_FULL:
             Match(TokenType.K_FULL);
-            if (Current != null && Current.Type == TokenType.K_OUTER)
-              Consume();
+            Consume(TokenType.K_OUTER);
             Match(TokenType.K_JOIN);
             froms.Add(From(JoinType.OUTER_JOIN));
             break;
@@ -248,7 +324,7 @@ namespace tsqlc.Parse
       return froms;
     }
 
-    private From From(JoinType type = JoinType.PRIMARY, bool allowAlias = true)
+    private From From(JoinType type = JoinType.PRIMARY, bool allowAlias = true, bool allowOnClause = true)
     {
       if (Current != null && Current.Type == TokenType.OpenBracket)
       {
@@ -281,6 +357,7 @@ namespace tsqlc.Parse
         if (Current != null && Current.Type == TokenType.OpenBracket)
         {
           Match(TokenType.OpenBracket);
+          //TODO: Refactor here to use Consume
           while (Current != null && (Current.Type == TokenType.Identifier || Current.Type == TokenType.K_HOLDLOCK))
           {
             TableHint hint;
@@ -291,24 +368,22 @@ namespace tsqlc.Parse
 
             Consume();
 
-            if (Current != null && Current.Type == TokenType.Comma)
-            {
-              Consume();
+            if (Consume(TokenType.Comma))
               continue;
-            }
             else
               break;
           }
           Match(TokenType.CloseBracket);
         }
 
+        var onClause = allowOnClause ? OnClause(type) : null;
         return new ReferenceFrom
         {
           Join = type,
           Name = reference,
           Alias = alias,
           Hints = hints,
-          OnClause = OnClause(type)
+          OnClause = onClause
         };
       }
     }

@@ -13,6 +13,16 @@ namespace tsqlc.Tests
   public class ParserTests
   {
     [TestMethod]
+    public void EmptyInputYieldsNoTokens()
+    {
+      var sql = @"   ";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens);
+      Assert.IsTrue(!ast.Any(), "must be empty");
+    }
+
+    [TestMethod]
     public void SelectStatementAcidTest()
     {
       var sql = @"select  top (100*10) *, NULL AS col1
@@ -207,7 +217,7 @@ namespace tsqlc.Tests
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
-      Assert.AreEqual(typeof(UpdateStatement), statement.GetType(), "not a delete statement");
+      Assert.AreEqual(typeof(UpdateStatement), statement.GetType(), "not the right statement");
       Assert.AreEqual(5, statement.TopExpression.Value, "top expression failed");
 
       Assert.AreEqual(2, statement.SetColumnList.Count, "wrong number of sets");
@@ -228,6 +238,136 @@ namespace tsqlc.Tests
       Assert.AreEqual("val2", statement.WhereClause.Left.Identifier, "incorrect where clause");
       Assert.AreEqual(4, statement.WhereClause.Right.Value, "incorrect where clause");
       Assert.AreEqual(BooleanOperatorType.NotEqual, statement.WhereClause.Type, "incorrect where clause");
+    }
+
+    [TestMethod]
+    public void TestInsertBasic()
+    {
+      var sql = @"insert dbo.tb_test with(tablockx) values (1,2,'ss')";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(ValuesInsertStatement), statement.GetType(), "not the right statement");
+      Assert.AreEqual(null, statement.TopExpression, "top expression failed");
+
+      Assert.AreEqual(0, statement.ColumnSpecification.Count, "incorrect number of columns specified");
+      Assert.AreEqual("dbo.tb_test", statement.Target.Name.Identifier, "incorrect number of columns specified");
+      Assert.AreEqual(1, statement.Target.Hints.Count, "incorrect number of hints");
+      Assert.AreEqual(TableHint.TABLOCKX, statement.Target.Hints[0], "incorrect hints");
+      Assert.AreEqual(1, statement.Values.Rows.Count, "incorrect number of values");
+      Assert.AreEqual(3, statement.Values.Rows[0].Expressions.Count, "incorrect number of expressions");
+      Assert.AreEqual(1, statement.Values.Rows[0].Expressions[0].Value, "incorrect values expression");
+      Assert.AreEqual(2, statement.Values.Rows[0].Expressions[1].Value, "incorrect values expression");
+      Assert.AreEqual("ss", statement.Values.Rows[0].Expressions[2].Value, "incorrect values expression");
+    }
+
+    [TestMethod]
+    public void TestInsertWithTop()
+    {
+      var sql = @"insert top (3443) dbo.tb_test with(tablockx) values (1,2,'ss')";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(ValuesInsertStatement), statement.GetType(), "not the right statement");
+      Assert.AreEqual(3443, statement.TopExpression.Value, "top expression failed");
+
+      Assert.AreEqual(0, statement.ColumnSpecification.Count, "incorrect number of columns specified");
+      Assert.AreEqual("dbo.tb_test", statement.Target.Name.Identifier, "incorrect number of columns specified");
+      Assert.AreEqual(1, statement.Target.Hints.Count, "incorrect number of hints");
+      Assert.AreEqual(TableHint.TABLOCKX, statement.Target.Hints[0], "incorrect hints");
+      Assert.AreEqual(1, statement.Values.Rows.Count, "incorrect number of values");
+      Assert.AreEqual(3, statement.Values.Rows[0].Expressions.Count, "incorrect number of expressions");
+      Assert.AreEqual(1, statement.Values.Rows[0].Expressions[0].Value, "incorrect values expression");
+      Assert.AreEqual(2, statement.Values.Rows[0].Expressions[1].Value, "incorrect values expression");
+      Assert.AreEqual("ss", statement.Values.Rows[0].Expressions[2].Value, "incorrect values expression");
+    }
+
+    [TestMethod]
+    public void TestInsertWithColumnList()
+    {
+      var sql = @"insert into dbo.tb_test with(tablockx)(xx,yy,zz) values (1,2,'ss')";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(ValuesInsertStatement), statement.GetType(), "not the right statement");
+      Assert.AreEqual(null, statement.TopExpression, "top expression failed");
+
+      Assert.AreEqual(3, statement.ColumnSpecification.Count, "incorrect number of columns specified");
+      Assert.AreEqual("xx", statement.ColumnSpecification[0].Identifier, "incorrect columns specified");
+      Assert.AreEqual("yy", statement.ColumnSpecification[1].Identifier, "incorrect columns specified");
+      Assert.AreEqual("zz", statement.ColumnSpecification[2].Identifier, "incorrect columns specified");
+      Assert.AreEqual("dbo.tb_test", statement.Target.Name.Identifier, "incorrect number of columns specified");
+      Assert.AreEqual(1, statement.Target.Hints.Count, "incorrect number of hints");
+      Assert.AreEqual(TableHint.TABLOCKX, statement.Target.Hints[0], "incorrect hints");
+      Assert.AreEqual(1, statement.Values.Rows.Count, "incorrect number of values");
+      Assert.AreEqual(3, statement.Values.Rows[0].Expressions.Count, "incorrect number of expressions");
+      Assert.AreEqual(1, statement.Values.Rows[0].Expressions[0].Value, "incorrect values expression");
+      Assert.AreEqual(2, statement.Values.Rows[0].Expressions[1].Value, "incorrect values expression");
+      Assert.AreEqual("ss", statement.Values.Rows[0].Expressions[2].Value, "incorrect values expression");
+    }
+
+    [TestMethod]
+    public void TestInsertWithMultipleValues()
+    {
+      var sql = @"insert dbo.tb_test with(tablockx) values (1,2,'ss'),(3,4,'22')";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(ValuesInsertStatement), statement.GetType(), "not the right statement");
+      Assert.AreEqual(null, statement.TopExpression, "top expression failed");
+
+      Assert.AreEqual(0, statement.ColumnSpecification.Count, "incorrect number of columns specified");
+      Assert.AreEqual("dbo.tb_test", statement.Target.Name.Identifier, "incorrect number of columns specified");
+      Assert.AreEqual(1, statement.Target.Hints.Count, "incorrect number of hints");
+      Assert.AreEqual(TableHint.TABLOCKX, statement.Target.Hints[0], "incorrect hints");
+      Assert.AreEqual(2, statement.Values.Rows.Count, "incorrect number of values");
+      Assert.AreEqual(3, statement.Values.Rows[0].Expressions.Count, "incorrect number of expressions");
+      Assert.AreEqual(1, statement.Values.Rows[0].Expressions[0].Value, "incorrect values expression");
+      Assert.AreEqual(2, statement.Values.Rows[0].Expressions[1].Value, "incorrect values expression");
+      Assert.AreEqual("ss", statement.Values.Rows[0].Expressions[2].Value, "incorrect values expression");
+      Assert.AreEqual(3, statement.Values.Rows[1].Expressions[0].Value, "incorrect values expression");
+      Assert.AreEqual(4, statement.Values.Rows[1].Expressions[1].Value, "incorrect values expression");
+      Assert.AreEqual("22", statement.Values.Rows[1].Expressions[2].Value, "incorrect values expression");
+    }
+
+    [TestMethod]
+    public void TestInsertWithSelect()
+    {
+      var sql = @"insert dbo.tb_test with(tablockx) (aa,bb,cc) select col1, col2, col3 from tb_y";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(SelectInsertStatement), statement.GetType(), "not the right statement");
+      Assert.AreEqual(null, statement.TopExpression, "top expression failed");
+
+      Assert.AreEqual(3, statement.ColumnSpecification.Count, "incorrect number of columns specified");
+      Assert.AreEqual("aa", statement.ColumnSpecification[0].Identifier, "incorrect columns specified");
+      Assert.AreEqual("bb", statement.ColumnSpecification[1].Identifier, "incorrect columns specified");
+      Assert.AreEqual("cc", statement.ColumnSpecification[2].Identifier, "incorrect columns specified");
+      Assert.AreEqual("dbo.tb_test", statement.Target.Name.Identifier, "incorrect number of columns specified");
+      Assert.AreEqual(1, statement.Target.Hints.Count, "incorrect number of hints");
+      Assert.AreEqual(TableHint.TABLOCKX, statement.Target.Hints[0], "incorrect hints");
+      Assert.AreEqual(3, statement.SelectStatement.ColumnList.Count, "invalid columns");
+      Assert.AreEqual("col1", statement.SelectStatement.ColumnList[0].Expression.Identifier, "invalid columns");
+      Assert.AreEqual("col2", statement.SelectStatement.ColumnList[1].Expression.Identifier, "invalid columns");
+      Assert.AreEqual("col3", statement.SelectStatement.ColumnList[2].Expression.Identifier, "invalid columns");
+      Assert.AreEqual(1, statement.SelectStatement.FromList.Count, "invalid from");
+      Assert.AreEqual("tb_y", statement.SelectStatement.FromList[0].Name.Identifier, "invalid from");
     }
   }
 }
