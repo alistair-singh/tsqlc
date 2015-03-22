@@ -34,8 +34,8 @@ namespace tsqlc.AST
 
   public class SetExpressionColumn : Column
   {
-    public ReferenceExpression SetReference { get; set; }
-    public Expression SetExpression { get; set; }
+    public ReferenceExpression Reference { get; set; }
+    public Expression Expression { get; set; }
   }
 
   public class StarColumn : Column

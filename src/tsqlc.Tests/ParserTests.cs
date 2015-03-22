@@ -183,10 +183,51 @@ namespace tsqlc.Tests
       Assert.AreEqual(typeof(UpdateStatement), statement.GetType(), "not a delete statement");
       Assert.AreEqual(5, statement.TopExpression.Value, "top expression failed");
 
-      Assert.AreEqual(statement.Target.Name.Identifier, "dbo.xxx", "incorrect identifier");
-      Assert.AreEqual(statement.WhereClause.Left.Identifier, "val2", "incorrect where clause");
-      Assert.AreEqual(statement.WhereClause.Right.Value, 4, "incorrect where clause");
-      Assert.AreEqual(statement.WhereClause.Type, BooleanOperatorType.NotEqual, "incorrect where clause");
+      Assert.AreEqual(2, statement.SetColumnList.Count, "wrong number of sets");
+      Assert.AreEqual("val1", statement.SetColumnList[0].Reference.Identifier, "wrong identifier");
+      Assert.AreEqual(1, statement.SetColumnList[0].Expression.Value, "wrong identifier");
+      Assert.AreEqual("val2", statement.SetColumnList[1].Reference.Identifier, "wrong identifier");
+      Assert.AreEqual(3, statement.SetColumnList[1].Expression.Value, "wrong identifier");
+
+      Assert.AreEqual("dbo.xxx", statement.Target.Name.Identifier, "incorrect identifier");
+      Assert.AreEqual("val2", statement.WhereClause.Left.Identifier, "incorrect where clause");
+      Assert.AreEqual(4, statement.WhereClause.Right.Value, "incorrect where clause");
+      Assert.AreEqual(BooleanOperatorType.NotEqual, statement.WhereClause.Type, "incorrect where clause");
+    }
+
+    [TestMethod]
+    public void UpdateStatementCompound()
+    {
+      var sql = @"update top 5 dbo.xxx set val1 = 1, val2 = 3 
+                  from dbo.xxx inner join yyy on val1 <= val5
+                  where val2 <> 4";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(UpdateStatement), statement.GetType(), "not a delete statement");
+      Assert.AreEqual(5, statement.TopExpression.Value, "top expression failed");
+
+      Assert.AreEqual(2, statement.SetColumnList.Count, "wrong number of sets");
+      Assert.AreEqual("val1", statement.SetColumnList[0].Reference.Identifier, "wrong identifier");
+      Assert.AreEqual(1, statement.SetColumnList[0].Expression.Value, "wrong identifier");
+      Assert.AreEqual("val2", statement.SetColumnList[1].Reference.Identifier, "wrong identifier");
+      Assert.AreEqual(3, statement.SetColumnList[1].Expression.Value, "wrong identifier");
+
+      Assert.AreEqual(2, statement.FromList.Count, "wrong number of sets");
+      Assert.AreEqual("dbo.xxx", statement.FromList[0].Name.Identifier, "invalid from list");
+      Assert.AreEqual("yyy", statement.FromList[1].Name.Identifier, "invalid from list");
+      Assert.AreEqual(JoinType.INNER, statement.FromList[1].Join, "invalid join list");
+      Assert.AreEqual("val1", statement.FromList[1].OnClause.Left.Identifier, "invalid identifier");
+      Assert.AreEqual(BooleanOperatorType.GreaterThanOrEqual, statement.FromList[1].OnClause.Type, "invalid identifier");
+      Assert.AreEqual("val5", statement.FromList[1].OnClause.Right.Identifier, "invalid identifier");
+
+      Assert.AreEqual("dbo.xxx", statement.Target.Name.Identifier, "incorrect identifier");
+      Assert.AreEqual("val2", statement.WhereClause.Left.Identifier, "incorrect where clause");
+      Assert.AreEqual(4, statement.WhereClause.Right.Value, "incorrect where clause");
+      Assert.AreEqual(BooleanOperatorType.NotEqual, statement.WhereClause.Type, "incorrect where clause");
     }
   }
 }

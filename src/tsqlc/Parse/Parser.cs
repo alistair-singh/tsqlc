@@ -87,6 +87,7 @@ namespace tsqlc.Parse
       {
         TopExpression = top,
         Target = target,
+        FromList = froms,
         SetColumnList = setColumns,
         WhereClause = where
       };
@@ -102,8 +103,8 @@ namespace tsqlc.Parse
         var expression = Expression();
         columns.Add(new SetExpressionColumn
         {
-          SetReference = reference,
-          SetExpression = expression
+          Reference = reference,
+          Expression = expression
         });
       }
       while (Consume(TokenType.Comma));

@@ -35,6 +35,7 @@ namespace tsqlc.AST
   {
     public Expression TopExpression { get; set; }
     public From Target { get; set; }
+    public ICollection<From> FromList { get; set; }
     public BooleanExpression WhereClause { get; set; }
     public ICollection<SetExpressionColumn> SetColumnList { get; set; }
   }
