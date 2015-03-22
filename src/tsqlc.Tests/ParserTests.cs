@@ -221,7 +221,7 @@ namespace tsqlc.Tests
       Assert.AreEqual("yyy", statement.FromList[1].Name.Identifier, "invalid from list");
       Assert.AreEqual(JoinType.INNER, statement.FromList[1].Join, "invalid join list");
       Assert.AreEqual("val1", statement.FromList[1].OnClause.Left.Identifier, "invalid identifier");
-      Assert.AreEqual(BooleanOperatorType.GreaterThanOrEqual, statement.FromList[1].OnClause.Type, "invalid identifier");
+      Assert.AreEqual(BooleanOperatorType.LessThanOrEqual, statement.FromList[1].OnClause.Type, "invalid identifier");
       Assert.AreEqual("val5", statement.FromList[1].OnClause.Right.Identifier, "invalid identifier");
 
       Assert.AreEqual("dbo.xxx", statement.Target.Name.Identifier, "incorrect identifier");
