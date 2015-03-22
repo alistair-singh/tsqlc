@@ -127,7 +127,7 @@ namespace tsqlc.Parse
       var columns = ColumnList();
 
       ICollection<From> froms = null;
-      if (Current.Type == TokenType.K_FROM)
+      if (Current != null && Current.Type == TokenType.K_FROM)
         froms = FromList();
 
       var whereClause = Where();
@@ -143,7 +143,7 @@ namespace tsqlc.Parse
 
     private BooleanExpression Where()
     {
-      if (Current.Type == TokenType.K_WHERE)
+      if (Current != null && Current.Type == TokenType.K_WHERE)
       {
         Consume();
         return BooleanExpression();
@@ -154,7 +154,7 @@ namespace tsqlc.Parse
 
     private Expression Top()
     {
-      if (Current.Type == TokenType.K_TOP)
+      if (Current != null && Current.Type == TokenType.K_TOP)
       {
         Consume();
         return PrimaryExpression();

@@ -50,6 +50,86 @@ namespace tsqlc.Tests
     }
 
     [TestMethod]
+    public void SelectStatementSingleColumnNoFromTest()
+    {
+      var sql = @"select 1 as col1";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(SelectStatement), statement.GetType(), "not a select statement");
+
+      Assert.AreEqual(1, statement.ColumnList.Count, "invalid number of columns");
+      Assert.AreEqual(typeof(ExpressionColumn), statement.ColumnList[0].GetType(), "column not expression");
+      Assert.AreEqual(typeof(ConstantExpression), statement.ColumnList[0].Expression.GetType(), "column not constant");
+      Assert.AreEqual(1, statement.ColumnList[0].Expression.Value, "column not correct value");
+      Assert.AreEqual("col1", statement.ColumnList[0].Alias, "column incorrect alias");
+
+      //TODO: Finish unit test for where clause and and from list
+    }
+
+    [TestMethod]
+    public void IfStatementAcidTest()
+    {
+      var sql = @"if 1 = 0 select 1 else select 0";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(IfStatement), statement.GetType(), "not a statement type");
+
+      Assert.IsTrue(statement.Test.Left.Value == 1 && 
+        statement.Test.Right.Value == 0 && 
+        statement.Test.Type == BooleanOperatorType.Equals);
+
+      Assert.IsTrue(statement.TrueBody != null && 
+        statement.FalseBody != null);
+    }
+
+    [TestMethod]
+    public void IfStatementNoElse()
+    {
+      var sql = @"if 1 = 0 select 1 ";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(IfStatement), statement.GetType(), "not a statement type");
+
+      Assert.IsTrue(statement.Test.Left.Value == 1 && 
+        statement.Test.Right.Value == 0 && 
+        statement.Test.Type == BooleanOperatorType.Equals);
+
+      Assert.IsTrue(statement.TrueBody != null && 
+        statement.FalseBody == null);
+    }
+
+    [TestMethod]
+    public void WhileStatementAcidTest()
+    {
+      var sql = @"while 1 = 1 select 4";
+
+      var tokens = new Lexer(sql);
+      var ast = new Parser(tokens).ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(WhileStatement), statement.GetType(), "not a statement type");
+
+      Assert.IsTrue(statement.Test.Left.Value == 1 && 
+        statement.Test.Right.Value == 1 && 
+        statement.Test.Type == BooleanOperatorType.Equals);
+
+      Assert.IsTrue(statement.Body != null);
+    }
+
+    [TestMethod]
     public void DeleteStatementAcidTest()
     {
       var sql = @"delete top (5) from x from xxxx x (TABLOCKX) where 1 = 2";
