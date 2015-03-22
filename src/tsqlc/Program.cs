@@ -42,39 +42,56 @@ namespace tsqlc
   {
     static void Main(string[] args)
     {
-      using (Benchmark.Start("*"))
+      Benchmark.Begin += (name, id) =>
+      {
+        using (ConsoleUtil.Color(fg: ConsoleColor.Green))
+          Console.WriteLine("{0}:{1}->{2}", id, name, DateTime.Now);
+      };
+
+      Benchmark.End += (name, id, elapse) =>
+      {
+        using (ConsoleUtil.Color(fg: ConsoleColor.Green))
+          Console.WriteLine("{0}:{1}->{2}ms, {3}", id, name, elapse, DateTime.Now);
+      };
+
+      using (Benchmark.Start("total"))
       {
         const string testFilePath = @"Test.txt";
-        var text = File.ReadAllText(testFilePath);
+        string text;
+
+        using (Benchmark.Start("io"))
+          text = File.ReadAllText(testFilePath);
+
         try
         {
           var tokens = new Token[0];
           Console.WriteLine("=== token ===");
           using (Benchmark.Start("lexer"))
           {
-            tokens = new Lexer(text).ToArray();
-            foreach (var token in tokens)
-            {
-              Console.WriteLine(token);
-            }
+            using (Benchmark.Start("lex"))
+              tokens = new Lexer(text).ToArray();
+
+            using (Benchmark.Start("print"))
+              foreach (var token in tokens)
+                Console.WriteLine(token);
           }
 
           Console.WriteLine("=== statements ===");
           using (Benchmark.Start("parser"))
           {
-            var parser = new Parser(tokens);
-            foreach (dynamic statement in parser)
-            {
-              Console.WriteLine(statement);
-            }
+            IEnumerable<Statement> statements;
+            using (Benchmark.Start("parse"))
+              statements = new Parser(tokens).ToArray();
+
+            using (Benchmark.Start("print"))
+              foreach (dynamic statement in statements)
+                Console.WriteLine(statement);
           }
         }
         catch (Exception ex)
         {
-          var current = Console.ForegroundColor;
-          Console.ForegroundColor = ConsoleColor.Red;
-          Console.WriteLine(ex.Message);
-          Console.ForegroundColor = current;
+          using (ConsoleUtil.Color(fg: ConsoleColor.Red))
+            Console.WriteLine(ex.Message);
         }
       }
       Console.ReadKey(true);

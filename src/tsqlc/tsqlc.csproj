@@ -62,6 +62,7 @@
     <Compile Include="Parse\Token.cs" />
     <Compile Include="Parse\TokenExtensions.cs" />
     <Compile Include="Parse\TokenType.cs" />
+    <Compile Include="Util\ConsoleUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

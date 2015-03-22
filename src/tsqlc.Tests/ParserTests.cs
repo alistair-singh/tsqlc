@@ -12,6 +12,10 @@ namespace tsqlc.Tests
   [TestClass]
   public class ParserTests
   {
+    //TODO: Test where clause
+    //TODO: Test expression parsing
+    //TODO: Test From clause
+
     [TestMethod]
     public void EmptyInputYieldsNoTokens()
     {

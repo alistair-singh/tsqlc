@@ -24,55 +24,39 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace tsqlc.Util
 {
-  public delegate void BenchmarkBegin(string name, int id);
-  public delegate void BenchmarkEnd(string name, int id, long ellapseTime);
-
-  public class Benchmark : IDisposable
+  public static class ConsoleUtil 
   {
-    [ThreadStatic]
-    private static int InstanceID = 0;
-    [ThreadStatic]
-    private static List<string> Namespace = new List<string> { "*" + Thread.CurrentThread.ManagedThreadId.ToString() };
-
-    public static event BenchmarkBegin Begin;
-    public static event BenchmarkEnd End;
-
-    private Stopwatch _watch;
-    private string _name;
-    private int _id;
-
-    private Benchmark(string name)
+    private class ConsoleColorChange: IDisposable
     {
-      Namespace.Add(name);
-      _name = string.Format("{0}", string.Join(".", Namespace));
-      _watch = new Stopwatch();
-      _id = ++InstanceID;
+      ConsoleColor _foreground;
+      ConsoleColor _background;
 
-      if(Begin  != null)
-        Begin(_name, _id);
+      public ConsoleColorChange(ConsoleColor foreground, ConsoleColor background)
+      {
+        _foreground = Console.ForegroundColor;
+        _background = Console.BackgroundColor;
+        Console.ForegroundColor = foreground;
+        Console.BackgroundColor = background;
+      }
 
-      _watch.Start();
+      public void Dispose()
+      {
+        Console.ForegroundColor = _foreground;
+        Console.BackgroundColor = _background;
+      }
     }
 
-    public static IDisposable Start(string name)
+    public static IDisposable Color(ConsoleColor? fg = null, ConsoleColor? bg = null)
     {
-      return new Benchmark(name);
-    }
-
-    public void Dispose()
-    {
-      _watch.Stop();
-      if (Namespace.Count > 1)
-        Namespace.RemoveAt(Namespace.Count - 1);
-      if(End != null)
-        End(_name, _id, _watch.ElapsedMilliseconds);
+      return new ConsoleColorChange(fg.HasValue ? fg.Value : Console.ForegroundColor,
+        bg.HasValue ? bg.Value : Console.BackgroundColor);
     }
   }
 }
