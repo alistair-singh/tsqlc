@@ -20,9 +20,7 @@ namespace tsqlc.Tests
     public void EmptyInputYieldsNoTokens()
     {
       var sql = @"   ";
-
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens);
+      var ast = sql.Parse();
       Assert.IsTrue(!ast.Any(), "must be empty");
     }
 
@@ -45,8 +43,7 @@ namespace tsqlc.Tests
                           or age is null
                           or not age is null";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -68,8 +65,7 @@ namespace tsqlc.Tests
     {
       var sql = @"select x.x.x.x, xxx.xxx, ......x. x  . x, x . x. x.  x";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -87,8 +83,7 @@ namespace tsqlc.Tests
     {
       var sql = @"select 1 as col1";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -108,8 +103,7 @@ namespace tsqlc.Tests
     {
       var sql = @"if 1 = 0 select 1 else select 0";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -128,8 +122,7 @@ namespace tsqlc.Tests
     {
       var sql = @"if 1 = 0 select 1 ";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -148,8 +141,7 @@ namespace tsqlc.Tests
     {
       var sql = @"while 1 = 1 select 4";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -167,8 +159,7 @@ namespace tsqlc.Tests
     {
       var sql = @"delete top (5) from x from xxxx x (TABLOCKX) where 1 = 2";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -189,8 +180,7 @@ namespace tsqlc.Tests
     {
       var sql = @"update top 5 dbo.xxx set val1 = 1, val2 = 3 where val2 <> 4";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -216,8 +206,7 @@ namespace tsqlc.Tests
                   from dbo.xxx inner join yyy on val1 <= val5
                   where val2 <> 4";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -249,8 +238,7 @@ namespace tsqlc.Tests
     {
       var sql = @"insert dbo.tb_test with(tablockx) values (1,2,'ss')";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -273,8 +261,7 @@ namespace tsqlc.Tests
     {
       var sql = @"insert top (3443) dbo.tb_test with(tablockx) values (1,2,'ss')";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -297,8 +284,7 @@ namespace tsqlc.Tests
     {
       var sql = @"insert into dbo.tb_test with(tablockx)(xx,yy,zz) values (1,2,'ss')";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -324,8 +310,7 @@ namespace tsqlc.Tests
     {
       var sql = @"insert dbo.tb_test with(tablockx) values (1,2,'ss'),(3,4,'22')";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
@@ -351,8 +336,7 @@ namespace tsqlc.Tests
     {
       var sql = @"insert dbo.tb_test with(tablockx) (aa,bb,cc) select col1, col2, col3 from tb_y";
 
-      var tokens = new Lexer(sql);
-      var ast = new Parser(tokens).ToArray();
+      var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");

@@ -69,7 +69,7 @@ namespace tsqlc
           using (Benchmark.Start("lexer"))
           {
             using (Benchmark.Start("lex"))
-              tokens = new Lexer(text).ToArray();
+              tokens = text.Lex().ToArray();
 
             using (Benchmark.Start("print"))
               foreach (var token in tokens)
@@ -81,7 +81,7 @@ namespace tsqlc
           {
             IEnumerable<Statement> statements;
             using (Benchmark.Start("parse"))
-              statements = new Parser(tokens).ToArray();
+              statements = tokens.Parse().ToArray();
 
             using (Benchmark.Start("print"))
               foreach (dynamic statement in statements)

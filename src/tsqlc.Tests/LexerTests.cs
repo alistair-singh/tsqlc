@@ -37,7 +37,7 @@ namespace tsqlc.Tests
     public void EmptyInputYieldsNoTokens()
     {
       const string input = @"";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.IsTrue(result.Length == 0, "result is not empty");
     }
 
@@ -47,7 +47,7 @@ namespace tsqlc.Tests
       const string input = null;
       try
       {
-        var result = new Lexer(input).ToArray();
+        var result = input.Lex().ToArray();
         Assert.Fail("not supposed to reach here");
       }
       catch (ArgumentNullException e)
@@ -60,7 +60,7 @@ namespace tsqlc.Tests
     public void WhitespaceInputYieldsNoTokens()
     {
       const string input = " \t \n \r \r \v";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.IsTrue(result.Length == 0, "result is not empty");
     }
 
@@ -68,7 +68,7 @@ namespace tsqlc.Tests
     public void LexVarcharConstant()
     {
       const string input = @" 'hello' ";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.IsTrue(result.Length == 1, "result is empty");
       Assert.IsTrue(result[0].Type == TokenType.VarcharConstant, "token type not varchar");
       Assert.IsTrue(result[0].Character == "hello", "values are not equal");
@@ -78,7 +78,7 @@ namespace tsqlc.Tests
     public void LexNvarcharConstant()
     {
       const string input = @" N'hello' ";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.IsTrue(result.Length == 1, "result is empty");
       Assert.IsTrue(result[0].Type == TokenType.NvarcharConstant, "token type not nvarchar");
       Assert.IsTrue(result[0].Character == "hello", "values are not equal");
@@ -88,7 +88,7 @@ namespace tsqlc.Tests
     public void LexIntegerConstant()
     {
       const string input = @" 123 ";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.IsTrue(result.Length == 1, "result is empty");
       Assert.IsTrue(result[0].Type == TokenType.IntConstant, "token type not int");
       Assert.IsTrue(result[0].Int == 123, "values are not equal");
@@ -98,7 +98,7 @@ namespace tsqlc.Tests
     public void LexBigIntegerConstant()
     {
       const string input = @" 6000000000 ";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.IsTrue(result.Length == 1, "result is empty");
       Assert.IsTrue(result[0].Type == TokenType.BigIntConstant, "token type not bigint");
       Assert.IsTrue(result[0].BigInt == 6000000000, "values are not equal");
@@ -108,7 +108,7 @@ namespace tsqlc.Tests
     public void LexRealConstant()
     {
       const string input = @" 3e+4 ";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.IsTrue(result.Length == 1, "result is empty");
       Assert.AreEqual(result[0].CharacterIndex, 2);
       Assert.IsTrue(result[0].Type == TokenType.RealConstant, "token type not real");
@@ -119,7 +119,7 @@ namespace tsqlc.Tests
     public void LexNumericConstant()
     {
       const string input = @" 100.001 ";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.IsTrue(result.Length == 1, "result is empty");
       Assert.IsTrue(result[0].Type == TokenType.NumericConstant, "token type not numeric");
       Assert.IsTrue(result[0].Numeric == new decimal(100.001), "values are not equal");
@@ -129,7 +129,7 @@ namespace tsqlc.Tests
     public void LexDoubleQuotedIdentifier()
     {
       const string input = @" ""  hello"" ";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.IsTrue(result.Length == 1, "result is empty");
       Assert.IsTrue(result[0].Type == TokenType.Identifier, "token type not quoted identifier");
       Assert.AreEqual("\"  hello\"", result[0].Character, "values are not equal");
@@ -139,7 +139,7 @@ namespace tsqlc.Tests
     public void LexIdentifier()
     {
       const string input = @" bye ";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.AreEqual(1, result.Length, "length not expected");
       Assert.AreEqual(TokenType.Identifier, result[0].Type, "token type not quoted identifier");
       Assert.AreEqual("bye", result[0].Character, "values are not equal");
@@ -149,7 +149,7 @@ namespace tsqlc.Tests
     public void LexSquareBracketIdentifier()
     {
       const string input = @" [  hello  ] ";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.IsTrue(result.Length == 1, "result is empty");
       Assert.IsTrue(result[0].Type == TokenType.Identifier, "token type not identifier");
       Assert.AreEqual("[  hello  ]", result[0].Character, "values are not equal");
@@ -159,7 +159,7 @@ namespace tsqlc.Tests
     public void LexLineComment()
     {
       const string input = @"sdsd -- hello";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.AreEqual(2, result.Length, "length not expected");
       Assert.AreEqual(TokenType.LineComment, result[1].Type, "token type not line comment");
       Assert.AreEqual(" hello", result[1].Character, "values are not equal");
@@ -171,7 +171,7 @@ namespace tsqlc.Tests
       const string input = @"sdsd /* hello
 todo
 */ end";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.AreEqual(3, result.Length, "length not expected");
       Assert.AreEqual(result[1].CharacterIndex, 6);
       Assert.AreEqual(TokenType.BlockComment, result[1].Type, "token type not block comment");
@@ -186,7 +186,7 @@ todo
       try
       {
         const string input = @"[ sadsdsd  ";
-        var result = new Lexer(input).ToArray();
+        var result = input.Lex().ToArray();
         Assert.Fail("Never reach here");
       }
       catch (Exception e)
@@ -201,7 +201,7 @@ todo
       try
       {
         const string input = @"' sad sd sd ";
-        var result = new Lexer(input).ToArray();
+        var result = input.Lex().ToArray();
         Assert.Fail("Never reach here");
       }
       catch (Exception e)
@@ -214,7 +214,7 @@ todo
     public void LexOperatorToken()
     {
       const string input = @"- += =";
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
       Assert.AreEqual(3, result.Length, "length not expected");
       Assert.AreEqual(TokenType.SubtractOp, result[0].Type, "not subtract");
       Assert.AreEqual(TokenType.AddAssignOp, result[1].Type, "not add assignment");
@@ -226,7 +226,7 @@ todo
     {
       const string input = @" SELECT FRoM delete ";
 
-      var result = new Lexer(input).ToArray();
+      var result = input.Lex().ToArray();
 
       Assert.AreEqual(3, result.Length, "length not expected");
       Assert.AreEqual(TokenType.K_SELECT, result[0].Type, "not keyword");
