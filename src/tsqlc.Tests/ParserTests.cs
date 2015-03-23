@@ -115,6 +115,31 @@ namespace tsqlc.Tests
     }
 
     [TestMethod]
+    public void SelectThreeStatementsTest()
+    {
+      var sql = @"select 1 as n select 5; select 9";
+
+      var ast = sql.Parse().ToArray();
+      dynamic statements = ast;
+
+      Assert.AreEqual(3, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(SelectStatement), statements[0].GetType(), "not a select statement");
+      Assert.AreEqual(typeof(SelectStatement), statements[1].GetType(), "not a select statement");
+      Assert.AreEqual(typeof(SelectStatement), statements[2].GetType(), "not a select statement");
+      Assert.AreEqual(1, statements[0].ColumnList.Count, "must have x columns");
+      Assert.AreEqual(1, statements[1].ColumnList.Count, "must have x columns");
+      Assert.AreEqual(1, statements[2].ColumnList.Count, "must have x columns");
+
+      Assert.AreEqual(1, statements[0].ColumnList[0].Expression.Value, "value not equal");
+      Assert.AreEqual("n", statements[0].ColumnList[0].Alias, "value not equal");
+      Assert.IsFalse(statements[0].HasTerminator, "value not equal");
+      Assert.AreEqual(5, statements[1].ColumnList[0].Expression.Value, "value not equal");
+      Assert.IsTrue(statements[1].HasTerminator, "value not equal");
+      Assert.AreEqual(9, statements[2].ColumnList[0].Expression.Value, "value not equal");
+      Assert.IsFalse(statements[2].HasTerminator, "value not equal");
+    }
+
+    [TestMethod]
     public void SelectStatementSingleColumnNoFromTest()
     {
       var sql = @"select 1 as col1";
