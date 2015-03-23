@@ -87,6 +87,16 @@ namespace tsqlc.AST
     }
   }
 
+  public class GroupedExpression : Expression
+  {
+    public Expression Group { get; set; }
+
+    public override string ToString()
+    {
+      return string.Format("({0})", Group);
+    }
+  }
+
   public class NullExpression : Expression
   {
     public override string ToString()
@@ -108,20 +118,20 @@ namespace tsqlc.AST
 
   public class SelectStatementExpression : Expression
   {
-    public Statement Statement { get; set; }
+    public SelectStatement Statement { get; set; }
     public override string ToString()
     {
       return string.Format("(SELECT ...)");
     }
   }
 
-  public class BooleanExpression : Expression
+  public class BooleanExpression
   {
   }
 
   public class BooleanNotExpresison : BooleanExpression
   {
-    public Expression Right { get; set; }
+    public BooleanExpression Right { get; set; }
 
     public override string ToString()
     {

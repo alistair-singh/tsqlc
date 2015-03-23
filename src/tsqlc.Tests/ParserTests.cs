@@ -81,9 +81,9 @@ namespace tsqlc.Tests
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
       Assert.AreEqual(typeof(SelectStatement), statement.GetType(), "not a select statement");
-      Assert.IsTrue(statement.TopExpression.Type == BinaryType.Multiply &&
-         statement.TopExpression.Left.Value == 100 &&
-         statement.TopExpression.Right.Value == 10, "top expression failed");
+      Assert.IsTrue(statement.TopExpression.Group.Type == BinaryType.Multiply &&
+         statement.TopExpression.Group.Left.Value == 100 &&
+         statement.TopExpression.Group.Right.Value == 10, "top expression failed");
 
       Assert.AreEqual(2, statement.ColumnList.Count, "invalid number of columns");
       Assert.AreEqual(typeof(StarColumn), statement.ColumnList[0].GetType(), "first column not '*'");
@@ -137,6 +137,39 @@ namespace tsqlc.Tests
       Assert.IsTrue(statements[1].HasTerminator, "value not equal");
       Assert.AreEqual(9, statements[2].ColumnList[0].Expression.Value, "value not equal");
       Assert.IsFalse(statements[2].HasTerminator, "value not equal");
+    }
+
+    [TestMethod]
+    public void ExpressionTest()
+    {
+      var sql = @"select dbo.fn_(1, 'sda') as t, 1*-2+5 as b, -(2323) as c";
+
+      var ast = sql.Parse().ToArray();
+      dynamic statements = ast;
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(SelectStatement), statements[0].GetType(), "not a select statement");
+      Assert.AreEqual(3, statements[0].ColumnList.Count, "must have x columns");
+
+      Assert.AreEqual("dbo.fn_", statements[0].ColumnList[0].Expression.Function.Identifier, "function name incorrect");
+      Assert.AreEqual(2, statements[0].ColumnList[0].Expression.Parameters.Count, "function parameters incorrect");
+      Assert.AreEqual(1, statements[0].ColumnList[0].Expression.Parameters[0].Value, "function parameters incorrect");
+      Assert.AreEqual("sda", statements[0].ColumnList[0].Expression.Parameters[1].Value, "function parameters incorrect");
+      Assert.AreEqual("t", statements[0].ColumnList[0].Alias, "value not equal");
+
+      Assert.AreEqual(1, statements[0].ColumnList[1].Expression.Left.Left.Value, "value not equal");
+      Assert.AreEqual(BinaryType.Addition, statements[0].ColumnList[1].Expression.Type, "value not equal");
+      Assert.AreEqual(5, statements[0].ColumnList[1].Expression.Right.Value, "value not equal");
+      Assert.AreEqual(BinaryType.Multiply, statements[0].ColumnList[1].Expression.Left.Type, "value not equal");
+      Assert.AreEqual(2, statements[0].ColumnList[1].Expression.Left.Right.Right.Value, "value not equal");
+      Assert.AreEqual(UnaryType.Negative, statements[0].ColumnList[1].Expression.Left.Right.Type, "value not equal");
+      Assert.AreEqual("b", statements[0].ColumnList[1].Alias, "value not equal");
+
+      Assert.AreEqual(UnaryType.Negative, statements[0].ColumnList[2].Expression.Type, "value not equal");
+      Assert.AreEqual(2323, statements[0].ColumnList[2].Expression.Right.Group.Value, "value not equal");
+      Assert.AreEqual("c", statements[0].ColumnList[2].Alias, "value not equal");
+
+      Assert.IsFalse(statements[0].HasTerminator, "value not equal");
     }
 
     [TestMethod]
@@ -228,7 +261,7 @@ namespace tsqlc.Tests
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
       Assert.AreEqual(typeof(DeleteStatement), statement.GetType(), "not a delete statement");
-      Assert.AreEqual(5, statement.TopExpression.Value, "top expression failed");
+      Assert.AreEqual(5, statement.TopExpression.Group.Value, "top expression failed");
 
       Assert.AreEqual("x", statement.Target.Name.Identifier, "invalid target");
       Assert.AreEqual(1, statement.FromList.Count, "invalid from list");
@@ -361,7 +394,7 @@ namespace tsqlc.Tests
 
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
       Assert.AreEqual(typeof(ValuesInsertStatement), statement.GetType(), "not the right statement");
-      Assert.AreEqual(3443, statement.TopExpression.Value, "top expression failed");
+      Assert.AreEqual(3443, statement.TopExpression.Group.Value, "top expression failed");
 
       Assert.AreEqual(0, statement.ColumnSpecification.Count, "incorrect number of columns specified");
       Assert.AreEqual("dbo.tb_test", statement.Target.Name.Identifier, "incorrect number of columns specified");

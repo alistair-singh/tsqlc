@@ -1,5 +1,9 @@
 ﻿
+select 1*-5+3*2
 
+select top (23) (1 + 1) * 2 * 3 + 23 / 3 as t,s,*,1,dbo.fn_clr_do(), 2 as [       ],(select 23*4)as T, 'sd' as c
+
+/*
 while @@Rowcount <> 0
   delete top 5 x from xxxx x (TABLOCKX) where 1 = 2 and exists(select x from y (NOLOCK) where name like 'hello%');
 
@@ -29,7 +33,7 @@ begin
 end
 else
   select 3 as three;
-
+*/
 --12 + 13 * 14 + 15 * 23 * 22 + 23 / 23
 
 --select 12 , 12 ,3 ,4, *, cu = hello

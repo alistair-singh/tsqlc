@@ -31,6 +31,7 @@ using System.Text;
 using System.Threading.Tasks;
 using tsqlc.AST;
 using tsqlc.Parse;
+using tsqlc.Util;
 
 namespace tsqlc
 {
@@ -99,6 +100,12 @@ namespace tsqlc
     public static IEnumerable<Token> LexFile(string path)
     {
       return FromBuffer(FromFile(path)).Lex();
+    }
+
+    public static void Write(this IEnumerable<Statement> statements, TextWriter writer)
+    {
+      var sqlWriter = new SqlWriter(writer);
+      sqlWriter.AppendRange(statements);
     }
 
     private static IEnumerable<char> FromBuffer(byte[] buffer)

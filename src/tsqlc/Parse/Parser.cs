@@ -68,13 +68,10 @@ namespace tsqlc.Parse
           break;
         case TokenType.K_IF:
           return If();
-          break;
         case TokenType.K_BEGIN:
           return Block();
-          break;
         case TokenType.K_WHILE:
           return While();
-          break;
         case TokenType.SemiColon:
           statement = new TerminatedStatement();
           break;
@@ -629,7 +626,7 @@ namespace tsqlc.Parse
         if (CurrentTypeIs(TokenType.K_SELECT))
           expression = new SelectStatementExpression { Statement = Select() };
         else
-          expression = Expression();
+          expression = new GroupedExpression { Group = Expression() };
 
         Match(TokenType.CloseBracket);
         return expression;
@@ -689,7 +686,7 @@ namespace tsqlc.Parse
     {
       Match(TokenType.OpenBracket);
       var parameters = new List<Expression>();
-      if (CurrentTypeIs(TokenType.CloseBracket))
+      if (Consume(TokenType.CloseBracket))
         return new FunctionCallExpression { Function = reference, Parameters = parameters };
 
       do
@@ -723,7 +720,7 @@ namespace tsqlc.Parse
           throw Unexpected();
       }
       Consume();
-      return new UnaryExpression { Type = type, Right = Expression() };
+      return new UnaryExpression { Type = type, Right = PrimaryExpression() };
     }
 
     private ConstantExpression Constant()

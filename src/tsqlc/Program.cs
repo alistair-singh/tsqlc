@@ -84,8 +84,7 @@ namespace tsqlc
               statements = tokens.Parse().ToArray();
 
             using (Benchmark.Start("print"))
-              foreach (dynamic statement in statements)
-                Console.WriteLine(statement);
+              statements.Write(Console.Out);
           }
         }
         catch (Exception ex)
