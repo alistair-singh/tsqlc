@@ -25,6 +25,39 @@ namespace tsqlc.Tests
     }
 
     [TestMethod]
+    public void EmptyStatementTest()
+    {
+      var sql = @"   ; ;";
+      var ast = sql.Parse().ToArray();
+
+      Assert.AreEqual(2, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(TerminatedStatement), ast[0].GetType(), "not the right statement");
+      Assert.IsTrue((ast[0] as TerminatedStatement).HasTerminator, "not the right statement");
+      Assert.AreEqual(typeof(TerminatedStatement), ast[1].GetType(), "not the right statement");
+      Assert.IsTrue((ast[1] as TerminatedStatement).HasTerminator, "not the right statement");
+    }
+
+    [TestMethod]
+    public void BlockTest()
+    {
+      var sql = @"begin
+                  select 1 as n;
+                  delete tb_table
+                end";
+
+      var ast = sql.Parse().ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(BlockStatement), statement.GetType(), "not the right statement");
+
+      Assert.AreEqual(typeof(SelectStatement), statement.Statements[0].GetType(), "not the right statement");
+      Assert.IsTrue(statement.Statements[0].HasTerminator, "not the right statement");
+      Assert.AreEqual(typeof(DeleteStatement), statement.Statements[1].GetType(), "not the right statement");
+      Assert.IsFalse(statement.Statements[1].HasTerminator, "not the right statement");
+    }
+
+    [TestMethod]
     public void SelectStatementAcidTest()
     {
       var sql = @"select  top (100*10) *, NULL AS col1
@@ -58,6 +91,7 @@ namespace tsqlc.Tests
       Assert.AreEqual("col1", statement.ColumnList[1].Alias, "second column incorrect alias");
 
       //TODO: Finish unit test for where clause and and from list
+      Assert.IsFalse(statement.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
@@ -76,6 +110,8 @@ namespace tsqlc.Tests
       Assert.AreEqual("xxx.xxx", statement.ColumnList[1].Expression.Identifier, "reference not equal");
       Assert.AreEqual("......x.x.x", statement.ColumnList[2].Expression.Identifier, "reference not equal");
       Assert.AreEqual("x.x.x.x", statement.ColumnList[3].Expression.Identifier, "reference not equal");
+
+      Assert.IsFalse(statement.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
@@ -96,6 +132,7 @@ namespace tsqlc.Tests
       Assert.AreEqual("col1", statement.ColumnList[0].Alias, "column incorrect alias");
 
       //TODO: Finish unit test for where clause and and from list
+      Assert.IsFalse(statement.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
@@ -139,7 +176,7 @@ namespace tsqlc.Tests
     [TestMethod]
     public void WhileStatementAcidTest()
     {
-      var sql = @"while 1 = 1 select 4";
+      var sql = @"while 1 = 1 select 4;";
 
       var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
@@ -152,6 +189,8 @@ namespace tsqlc.Tests
         statement.Test.Type == BooleanOperatorType.Equals);
 
       Assert.IsTrue(statement.Body != null);
+
+      Assert.IsTrue(statement.Body.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
@@ -167,12 +206,37 @@ namespace tsqlc.Tests
       Assert.AreEqual(5, statement.TopExpression.Value, "top expression failed");
 
       Assert.AreEqual("x", statement.Target.Name.Identifier, "invalid target");
+      Assert.AreEqual(1, statement.FromList.Count, "invalid from list");
       Assert.AreEqual("xxxx", statement.FromList[0].Name.Identifier, "invalid from list");
       Assert.AreEqual("x", statement.FromList[0].Alias, "invalid from list");
 
       Assert.AreEqual(BooleanOperatorType.Equals, statement.WhereClause.Type, "invalid where clause");
       Assert.AreEqual(2, statement.WhereClause.Right.Value, "invalid where clause");
       Assert.AreEqual(1, statement.WhereClause.Left.Value, "invalid where clause");
+
+      Assert.IsFalse(statement.HasTerminator, "does not have terminator");
+    }
+
+    [TestMethod]
+    public void DeleteStatementBasic()
+    {
+      var sql = @"delete from x where 1 = 2;";
+
+      var ast = sql.Parse().ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(DeleteStatement), statement.GetType(), "not a delete statement");
+      Assert.AreEqual(null, statement.TopExpression, "top expression failed");
+
+      Assert.AreEqual("x", statement.Target.Name.Identifier, "invalid target");
+      Assert.AreEqual(0, statement.FromList.Count, "invalid from list");
+
+      Assert.AreEqual(BooleanOperatorType.Equals, statement.WhereClause.Type, "invalid where clause");
+      Assert.AreEqual(2, statement.WhereClause.Right.Value, "invalid where clause");
+      Assert.AreEqual(1, statement.WhereClause.Left.Value, "invalid where clause");
+
+      Assert.IsTrue(statement.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
@@ -197,6 +261,8 @@ namespace tsqlc.Tests
       Assert.AreEqual("val2", statement.WhereClause.Left.Identifier, "incorrect where clause");
       Assert.AreEqual(4, statement.WhereClause.Right.Value, "incorrect where clause");
       Assert.AreEqual(BooleanOperatorType.NotEqual, statement.WhereClause.Type, "incorrect where clause");
+
+      Assert.IsFalse(statement.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
@@ -204,7 +270,7 @@ namespace tsqlc.Tests
     {
       var sql = @"update top 5 dbo.xxx set val1 = 1, val2 = 3 
                   from dbo.xxx inner join yyy on val1 <= val5
-                  where val2 <> 4";
+                  where val2 <> 4;";
 
       var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
@@ -231,6 +297,8 @@ namespace tsqlc.Tests
       Assert.AreEqual("val2", statement.WhereClause.Left.Identifier, "incorrect where clause");
       Assert.AreEqual(4, statement.WhereClause.Right.Value, "incorrect where clause");
       Assert.AreEqual(BooleanOperatorType.NotEqual, statement.WhereClause.Type, "incorrect where clause");
+
+      Assert.IsTrue(statement.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
@@ -254,6 +322,8 @@ namespace tsqlc.Tests
       Assert.AreEqual(1, statement.Values.Rows[0].Expressions[0].Value, "incorrect values expression");
       Assert.AreEqual(2, statement.Values.Rows[0].Expressions[1].Value, "incorrect values expression");
       Assert.AreEqual("ss", statement.Values.Rows[0].Expressions[2].Value, "incorrect values expression");
+
+      Assert.IsFalse(statement.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
@@ -277,12 +347,14 @@ namespace tsqlc.Tests
       Assert.AreEqual(1, statement.Values.Rows[0].Expressions[0].Value, "incorrect values expression");
       Assert.AreEqual(2, statement.Values.Rows[0].Expressions[1].Value, "incorrect values expression");
       Assert.AreEqual("ss", statement.Values.Rows[0].Expressions[2].Value, "incorrect values expression");
+
+      Assert.IsFalse(statement.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
     public void TestInsertWithColumnList()
     {
-      var sql = @"insert into dbo.tb_test with(tablockx)(xx,yy,zz) values (1,2,'ss')";
+      var sql = @"insert into dbo.tb_test with(tablockx)(xx,yy,zz) values (1,2,'ss');";
 
       var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
@@ -303,6 +375,8 @@ namespace tsqlc.Tests
       Assert.AreEqual(1, statement.Values.Rows[0].Expressions[0].Value, "incorrect values expression");
       Assert.AreEqual(2, statement.Values.Rows[0].Expressions[1].Value, "incorrect values expression");
       Assert.AreEqual("ss", statement.Values.Rows[0].Expressions[2].Value, "incorrect values expression");
+
+      Assert.IsTrue(statement.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
@@ -329,12 +403,14 @@ namespace tsqlc.Tests
       Assert.AreEqual(3, statement.Values.Rows[1].Expressions[0].Value, "incorrect values expression");
       Assert.AreEqual(4, statement.Values.Rows[1].Expressions[1].Value, "incorrect values expression");
       Assert.AreEqual("22", statement.Values.Rows[1].Expressions[2].Value, "incorrect values expression");
+
+      Assert.IsFalse(statement.HasTerminator, "does not have terminator");
     }
 
     [TestMethod]
     public void TestInsertWithSelect()
     {
-      var sql = @"insert dbo.tb_test with(tablockx) (aa,bb,cc) select col1, col2, col3 from tb_y";
+      var sql = @"insert dbo.tb_test with(tablockx) (aa,bb,cc) select col1, col2, col3 from tb_y;";
 
       var ast = sql.Parse().ToArray();
       dynamic statement = ast.FirstOrDefault();
@@ -356,6 +432,8 @@ namespace tsqlc.Tests
       Assert.AreEqual("col3", statement.SelectStatement.ColumnList[2].Expression.Identifier, "invalid columns");
       Assert.AreEqual(1, statement.SelectStatement.FromList.Count, "invalid from");
       Assert.AreEqual("tb_y", statement.SelectStatement.FromList[0].Name.Identifier, "invalid from");
+
+      Assert.IsTrue(statement.HasTerminator, "does not have terminator");
     }
   }
 }

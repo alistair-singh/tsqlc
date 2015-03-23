@@ -31,7 +31,7 @@ using System.Text;
 
 namespace tsqlc.AST
 {
-  public class SelectStatement : Statement
+  public class SelectStatement : TerminatedStatement
   {
     public Expression TopExpression { get; set; }
     public ICollection<Column> ColumnList { get; set; }

@@ -41,7 +41,7 @@ namespace tsqlc.AST
     public ICollection<ValuesRow> Rows { get; set; }
   }
 
-  public class InsertStatement : Statement
+  public class InsertStatement : TerminatedStatement
   {
     public Expression TopExpression { get; set; }
     public From Target { get; set; }

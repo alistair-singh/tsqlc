@@ -28,4 +28,9 @@ namespace tsqlc.AST
   public class Statement
   {
   }
+
+  public class TerminatedStatement : Statement
+  {
+    public bool HasTerminator { get; set; }
+  }
 }

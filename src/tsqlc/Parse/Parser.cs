@@ -51,25 +51,39 @@ namespace tsqlc.Parse
       if (Current == null && !_tokens.MoveNext())
         return null;
 
+      TerminatedStatement statement;
       switch (Current.Type)
       {
         case TokenType.K_SELECT:
-          return Select();
+          statement = Select();
+          break;
         case TokenType.K_DELETE:
-          return Delete();
+          statement = Delete();
+          break;
         case TokenType.K_UPDATE:
-          return Update();
+          statement = Update();
+          break;
         case TokenType.K_INSERT:
-          return Insert();
+          statement = Insert();
+          break;
         case TokenType.K_IF:
           return If();
+          break;
         case TokenType.K_BEGIN:
           return Block();
+          break;
         case TokenType.K_WHILE:
           return While();
+          break;
+        case TokenType.SemiColon:
+          statement = new TerminatedStatement();
+          break;
         default:
           throw Unexpected();
       }
+
+      statement.HasTerminator = Consume(TokenType.SemiColon);
+      return statement;
     }
 
     private InsertStatement Insert()

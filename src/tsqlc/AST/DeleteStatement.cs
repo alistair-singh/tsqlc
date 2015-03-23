@@ -31,7 +31,7 @@ using System.Threading.Tasks;
 
 namespace tsqlc.AST
 {
-  public class DeleteStatement : Statement
+  public class DeleteStatement : TerminatedStatement
   {
     public Expression TopExpression { get; set; }
     public From Target { get; set; }
