@@ -28,19 +28,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using tsqlc.AST;
 
 namespace tsqlc.Parse
 {
-  public enum TableHint
-  {
-    NOLOCK = 0,
-    NOEXPAND, FORCESCAN, FORCESEEK, HOLDLOCK, NOWAIT, 
-    PAGLOCK, READCOMMITTED, READCOMMITTEDLOCK, READPAST, 
-    READUNCOMMITTED, REPEATABLEREAD, ROWLOCK, SERIALIZABLE,
-    SNAPSHOT, SPATIAL_WINDOW_MAX_CELLS, TABLOCK, TABLOCKX, 
-    UPDLOCK, XLOCK 
-  }
-
   public class TableHintMap
   {
     public static bool TryLookUp(string lookup, out TableHint hint)

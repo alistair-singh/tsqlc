@@ -26,8 +26,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System.Collections.Generic;
 using tsqlc.Parse;
+
+//TODO: implement values from clause
 namespace tsqlc.AST
 {
+  public enum TableHint
+  {
+    NOLOCK = 0,
+    NOEXPAND, FORCESCAN, FORCESEEK, HOLDLOCK, NOWAIT, 
+    PAGLOCK, READCOMMITTED, READCOMMITTEDLOCK, READPAST, 
+    READUNCOMMITTED, REPEATABLEREAD, ROWLOCK, SERIALIZABLE,
+    SNAPSHOT, SPATIAL_WINDOW_MAX_CELLS, TABLOCK, TABLOCKX, 
+    UPDLOCK, XLOCK 
+  }
+
   public enum JoinType
   {
     PRIMARY = 0,

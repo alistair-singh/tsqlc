@@ -506,6 +506,13 @@ namespace tsqlc.Parse
       if (CurrentTypeIs(TokenType.K_EXISTS))
         return BooleanExists();
 
+      if(Consume(TokenType.OpenBracket))
+      {
+        var expression = BooleanExpression();
+        Match(TokenType.CloseBracket);
+        return new GroupedBooleanExpression { Group = expression };
+      }
+
       var left = Expression();
 
       if (CurrentTypeIs(TokenType.K_BETWEEN))
@@ -530,6 +537,8 @@ namespace tsqlc.Parse
         }
       }
 
+      //TODO: Split boolean ops in AND/OR and comparison ops <=/=/< into...
+      //      two seperate enums
       var op = BooleanOperator();
       switch (Current.Type)
       {
@@ -540,7 +549,7 @@ namespace tsqlc.Parse
       }
 
       var right = Expression();
-      return new ComparisonExpression { Left = left, Type = op, Right = right };
+      return new BooleanComparisonExpression { Left = left, Type = op, Right = right };
     }
 
     private BooleanExpression IsNullOrNotNull(Expression left)
@@ -548,7 +557,7 @@ namespace tsqlc.Parse
       Match(TokenType.K_IS);
       var isNull = !Consume(TokenType.K_NOT);
       Match(TokenType.K_NULL);
-      return new NullComparisonExpression { IsNull = isNull, Left = left };
+      return new BooleanNullCheckExpression { IsNull = isNull, Left = left };
     }
 
     private BooleanExpression BooleanExists()
@@ -569,8 +578,8 @@ namespace tsqlc.Parse
       return new BooleanRangeExpression
       {
         Left = left,
-        BooleanOperator = op,
-        RangeOperator = rangeOp,
+        Type = op,
+        RangeType = rangeOp,
         Subquery = subquery
       };
     }

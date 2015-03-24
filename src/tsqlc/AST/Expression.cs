@@ -28,6 +28,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+//TODO: Make empty base classes interfaces
+//TODO: Remove ToStringMethods in favour of SqlWriter
 namespace tsqlc.AST
 {
   public class Expression
@@ -188,20 +190,25 @@ namespace tsqlc.AST
     }
   }
 
+  public class GroupedBooleanExpression : BooleanExpression
+  {
+    public BooleanExpression Group { get; set; }
+  }
+
   public class BooleanRangeExpression : BooleanExpression
   {
     public Expression Left { get; set; }
-    public BooleanOperatorType BooleanOperator { get; set; }
-    public RangeOperatorType RangeOperator { get; set; }
+    public BooleanOperatorType Type { get; set; }
+    public RangeOperatorType RangeType { get; set; }
     public SelectStatement Subquery { get; set; }
 
     public override string ToString()
     {
-      return string.Format("({0} {1} (:e {2}) (:e {3}))", BooleanOperator, RangeOperator, Left, Subquery);
+      return string.Format("({0} {1} (:e {2}) (:e {3}))", Type, RangeType, Left, Subquery);
     }
   }
 
-  public class NullComparisonExpression : BooleanExpression
+  public class BooleanNullCheckExpression : BooleanExpression
   {
     public Expression Left { get; set; }
     public bool IsNull { get; set; }
@@ -212,7 +219,7 @@ namespace tsqlc.AST
     }
   }
 
-  public class ComparisonExpression : BooleanExpression
+  public class BooleanComparisonExpression : BooleanExpression
   {
     public Expression Left { get; set; }
     public BooleanOperatorType Type { get; set; }

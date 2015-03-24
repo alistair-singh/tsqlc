@@ -1,8 +1,29 @@
 ﻿
-select 1*-5+3*2
+
+  select  top (100*10) *, NULL AS col1
+  from    tb_test as t with (nolock) 
+          inner join tb_test2 t2 (tablockx)
+            on t1.id = t2.id
+          join t3 on 1=2
+          full join t3 on 0=3
+          left join t3 on 0=2
+          right join t3 on 0=1
+          full outer join t4 on 333=4
+          left outer join t4 on x =x
+          right outer join t4 on y = z
+  where   name like 'alistair%'
+          and name is not null
+          or age is null
+          or not age is null
+          and (name in (select 1))
+
+select 1*-5+3*2,NULL as t from tb_test as t with(nolock)
+inner join tb_test2 on t = test and x = 2 and t between x and y
+  left join tb_test3 t (NOLOCK) on s = y
 
 select top (23) (1 + 1) * 2 * 3 + 23 / 3 as t,s,*,1,dbo.fn_clr_do(), 2 as [       ],(select 23*4)as T, 'sd' as c
 
+          select 1
 /*
 while @@Rowcount <> 0
   delete top 5 x from xxxx x (TABLOCKX) where 1 = 2 and exists(select x from y (NOLOCK) where name like 'hello%');

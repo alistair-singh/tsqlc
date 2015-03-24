@@ -33,14 +33,18 @@ using tsqlc.AST;
 
 namespace tsqlc.Util
 {
+  //TODO: Implement with visitor pattern
   public class SqlWriter
   {
-    public TextWriter _writer;
-    int _indentLevel = 0;
+    private TextWriter _writer;
+    private int _indentLevel;
+    private bool _isNewLine;
 
     public SqlWriter(TextWriter writer)
     {
       _writer = writer;
+      _indentLevel = 0;
+      _isNewLine = true;
     }
 
     public void Append(Statement statement)
@@ -48,6 +52,7 @@ namespace tsqlc.Util
       if (statement is SelectStatement)
       {
         Write(statement as SelectStatement);
+        WriteLine();
         return;
       }
 
@@ -67,22 +72,32 @@ namespace tsqlc.Util
       {
         Write("TOP ");
         Write(statement.TopExpression);
-        _indentLevel += 8;
         WriteLine();
-        _indentLevel -= 8;
       }
 
-      Write(statement.ColumnList.First());
-      _indentLevel += 8;
-      WriteLine();
-      foreach (var column in statement.ColumnList.Skip(1))
+      using (Indent(8))
       {
-        Write(",");
-        Write(column);
+        Write(statement.ColumnList.First());
+        WriteLine();
+        foreach (var column in statement.ColumnList.Skip(1))
+        {
+          Write(",");
+          Write(column);
+          WriteLine();
+        }
+      }
+
+      Write(statement.FromList);
+      if (statement.WhereClause != null)
+      {
+        Write("WHERE   ");
+        using (Indent(8))
+          Write(statement.WhereClause);
         WriteLine();
       }
-      _indentLevel -= 8;
     }
+
+    #region Columns
 
     private void Write(Column column)
     {
@@ -106,16 +121,269 @@ namespace tsqlc.Util
       Write("*");
     }
 
-    public void Write(string format, params object[] arg0)
+    #endregion
+
+    #region Froms
+
+    private void Write(ICollection<From> froms)
     {
-      _writer.Write(format, arg0);
+      if (froms != null && froms.Any())
+      {
+        Write("FROM    ");
+        Write(froms.Single(x => x.Join == JoinType.PRIMARY));
+        using (Indent(8))
+        {
+          WriteLine();
+          foreach (var from in froms.Where(x => x.Join != JoinType.PRIMARY))
+          {
+            Write(from);
+            WriteLine();
+          }
+        }
+      }
     }
 
-    public void WriteLine(string format = "", params object[] arg0)
+    private void Write(From from)
     {
-      _writer.WriteLine(format, arg0);
-      _writer.Write(string.Empty.PadRight(_indentLevel));
+      if (from is SubqueryFrom)
+        Write(from as SubqueryFrom);
+      else if (from is ReferenceFrom)
+        Write(from as ReferenceFrom);
+      else
+        throw new NotSupportedException();
     }
+
+    private void Write(SubqueryFrom from)
+    {
+      Write(GetJoinType(from.Join));
+      Write("(");
+      using (Indent(2))
+      {
+        WriteLine();
+        Write(from.Subquery);
+      }
+      WriteLine();
+      Write(")");
+      using (Indent(2))
+      {
+        WriteLine();
+        Write("ON ");
+        Write(from.OnClause);
+      }
+    }
+
+    private void Write(ReferenceFrom from)
+    {
+      Write(GetJoinType(from.Join));
+      Write(from.Name);
+      WriteAlias(from.Alias);
+      WriteOnClause(from.OnClause);
+    }
+
+    private void WriteTableHints(ICollection<TableHint> hints)
+    {
+      if (hints == null || !hints.Any())
+        return;
+      Write(" WITH (");
+      Write(string.Join(", ", hints));
+      Write(")");
+    }
+
+    private void WriteOnClause(BooleanExpression expression)
+    {
+      if (expression == null)
+        return;
+
+      using (Indent(2))
+      {
+        WriteLine();
+        Write("ON ");
+        Write(expression);
+      }
+    }
+
+    private void WriteAlias(string alias)
+    {
+      if (string.IsNullOrEmpty(alias))
+        return;
+
+      Write(" AS ");
+      Write(alias);
+    }
+
+    private string GetJoinType(JoinType type)
+    {
+      switch (type)
+      {
+        case JoinType.PRIMARY:
+          return string.Empty;
+        case JoinType.CROSS_APPLY:
+          return "CROSS APPLY ";
+        case JoinType.CROSS_JOIN:
+          return "CROSS JOIN ";
+        case JoinType.INNER:
+          return "INNER JOIN ";
+        case JoinType.LEFT:
+          return "LEFT JOIN ";
+        case JoinType.OUTER_APPLY:
+          return "OUTER APPLY ";
+        case JoinType.OUTER_JOIN:
+          return "FULL OUTER JOIN ";
+        case JoinType.RIGHT:
+          return "RIGHT JOIN ";
+        default:
+          throw new NotSupportedException();
+      }
+    }
+
+    #endregion
+
+    #region Boolean Expressions
+
+    private void Write(BooleanExpression expression)
+    {
+      if (expression is BooleanBetweenExpression)
+        Write(expression as BooleanBetweenExpression);
+      else if (expression is BooleanBinaryExpression)
+        Write(expression as BooleanBinaryExpression);
+      else if (expression is BooleanExistsExpression)
+        Write(expression as BooleanExistsExpression);
+      else if (expression is BooleanInListExpression)
+        Write(expression as BooleanInListExpression);
+      else if (expression is BooleanInSubqueryExpression)
+        Write(expression as BooleanInSubqueryExpression);
+      else if (expression is BooleanNotExpresison)
+        Write(expression as BooleanNotExpresison);
+      else if (expression is BooleanRangeExpression)
+        Write(expression as BooleanRangeExpression);
+      else if (expression is BooleanComparisonExpression)
+        Write(expression as BooleanComparisonExpression);
+      else if (expression is BooleanNullCheckExpression)
+        Write(expression as BooleanNullCheckExpression);
+      else if (expression is GroupedBooleanExpression)
+        Write(expression as GroupedBooleanExpression);
+      else
+        throw new NotSupportedException();
+    }
+
+    public void Write(GroupedBooleanExpression expression)
+    {
+      Write("(");
+      Write(expression.Group);
+      Write(")");
+    }
+
+    public void Write(BooleanBetweenExpression expression)
+    {
+      Write(expression.Left);
+      Write(" BETWEEN ");
+      Write(expression.First);
+      Write(" AND ");
+      Write(expression.Second);
+    }
+
+    public void Write(BooleanBinaryExpression expression)
+    {
+      string op;
+      switch (expression.Type)
+      {
+        case BooleanOperatorType.And:
+          op = " AND "; break;
+        case BooleanOperatorType.Or:
+          op = " OR "; break;
+        default:
+          throw new NotSupportedException();
+      }
+      Write(expression.Left);
+      Write(op);
+      Write(expression.Right);
+    }
+
+    public void Write(BooleanExistsExpression expression) { }
+
+    public void Write(BooleanInListExpression expression)
+    {
+      Write(expression.Left);
+      Write(expression.Not ? " NOT IN (" : " IN (");
+      WriteLine();
+      using (Indent(2))
+      {
+        Write(expression.List.First());
+        foreach (var val in expression.List.Skip(1))
+        {
+          WriteLine();
+          Write(",");
+          Write(val);
+        }
+      }
+      WriteLine();
+      Write(")");
+    }
+
+    public void Write(BooleanInSubqueryExpression expression)
+    {
+      Write(expression.Left);
+      Write(expression.Not ? " NOT IN (" : " IN (");
+      WriteLine();
+      using (Indent(2))
+        Write(expression.Subquery);
+      Write(")");
+    }
+
+    public void Write(BooleanNotExpresison expression)
+    {
+      Write("NOT ");
+      Write(expression.Right);
+    }
+
+    public void Write(BooleanRangeExpression expression)
+    {
+      Write(expression.Left);
+      Write(GetBooleanOperator(expression.Type));
+      Write(expression.Subquery);
+    }
+
+    public void Write(BooleanComparisonExpression expression)
+    {
+      Write(expression.Left);
+      Write(GetBooleanOperator(expression.Type));
+      Write(expression.Right);
+    }
+
+    public void Write(BooleanNullCheckExpression expression)
+    {
+      Write(expression.Left);
+      Write(expression.IsNull ? " IS NULL" : " IS NOT NULL");
+    }
+
+    private string GetBooleanOperator(BooleanOperatorType type)
+    {
+      switch (type)
+      {
+        case BooleanOperatorType.Equals:
+          return " = ";
+        case BooleanOperatorType.GreaterThan:
+          return " > ";
+        case BooleanOperatorType.GreaterThanOrEqual:
+          return " >= ";
+        case BooleanOperatorType.LessThan:
+          return " < ";
+        case BooleanOperatorType.LessThanOrEqual:
+          return " <= ";
+        case BooleanOperatorType.Like:
+          return " LIKE ";
+        case BooleanOperatorType.NotEqual:
+          return " <> ";
+        case BooleanOperatorType.NotGreaterThan:
+          return " !> ";
+        case BooleanOperatorType.NotLessThan:
+          return " !< ";
+        default:
+          throw new NotSupportedException();
+      }
+    }
+
+    #endregion
 
     #region Expression
 
@@ -135,6 +403,8 @@ namespace tsqlc.Util
         Write(expression as FunctionCallExpression);
       else if (expression is SelectStatementExpression)
         Write(expression as SelectStatementExpression);
+      else if (expression is NullExpression)
+        Write(expression as NullExpression);
       else
         throw new NotSupportedException();
     }
@@ -215,11 +485,11 @@ namespace tsqlc.Util
     public void Write(SelectStatementExpression expression)
     {
       Write("(");
-      _indentLevel += 8;
-      WriteLine();
-      Write(expression.Statement);
-      _indentLevel -= 8;
-      WriteLine();
+      using (Indent(2))
+      {
+        WriteLine();
+        Write(expression.Statement);
+      }
       Write(")");
     }
 
@@ -240,6 +510,34 @@ namespace tsqlc.Util
       }
     }
 
+    public void Write(NullExpression expression)
+    {
+      Write("NULL");
+    }
+
     #endregion
+
+    public void Write(string format, params object[] arg0)
+    {
+      if (_isNewLine)
+      {
+        _isNewLine = false;
+        _writer.Write(string.Empty.PadLeft(_indentLevel));
+      }
+
+      _writer.Write(format, arg0);
+    }
+
+    public void WriteLine(string format = "", params object[] arg0)
+    {
+      _writer.WriteLine(format, arg0);
+      _isNewLine = true;
+    }
+
+    private IDisposable Indent(int numOfSpaces)
+    {
+      _indentLevel += numOfSpaces;
+      return Disposable.From(() => _indentLevel -= numOfSpaces);
+    }
   }
 }
