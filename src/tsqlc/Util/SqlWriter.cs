@@ -131,15 +131,13 @@ namespace tsqlc.Util
       {
         Write("FROM    ");
         Write(froms.Single(x => x.Join == JoinType.PRIMARY));
+        WriteLine();
         using (Indent(8))
-        {
-          WriteLine();
           foreach (var from in froms.Where(x => x.Join != JoinType.PRIMARY))
           {
             Write(from);
             WriteLine();
           }
-        }
       }
     }
 
@@ -164,12 +162,7 @@ namespace tsqlc.Util
       }
       WriteLine();
       Write(")");
-      using (Indent(2))
-      {
-        WriteLine();
-        Write("ON ");
-        Write(from.OnClause);
-      }
+      WriteOnClause(from.OnClause);
     }
 
     private void Write(ReferenceFrom from)
@@ -177,6 +170,7 @@ namespace tsqlc.Util
       Write(GetJoinType(from.Join));
       Write(from.Name);
       WriteAlias(from.Alias);
+      WriteTableHints(from.Hints);
       WriteOnClause(from.OnClause);
     }
 
@@ -198,7 +192,8 @@ namespace tsqlc.Util
       {
         WriteLine();
         Write("ON ");
-        Write(expression);
+        using (Indent(2))
+          Write(expression);
       }
     }
 
@@ -269,7 +264,12 @@ namespace tsqlc.Util
     public void Write(GroupedBooleanExpression expression)
     {
       Write("(");
-      Write(expression.Group);
+      using (Indent(2))
+      {
+        WriteLine();
+        Write(expression.Group);
+        WriteLine();
+      }
       Write(")");
     }
 
@@ -288,18 +288,26 @@ namespace tsqlc.Util
       switch (expression.Type)
       {
         case BooleanOperatorType.And:
-          op = " AND "; break;
+          op = "AND "; break;
         case BooleanOperatorType.Or:
-          op = " OR "; break;
+          op = "OR "; break;
         default:
           throw new NotSupportedException();
       }
       Write(expression.Left);
+      WriteLine();
       Write(op);
       Write(expression.Right);
     }
 
-    public void Write(BooleanExistsExpression expression) { }
+    public void Write(BooleanExistsExpression expression)
+    {
+      Write("EXISTS (");
+      WriteLine();
+      using (Indent(2))
+        Write(expression.Subquery);
+      Write(")");
+    }
 
     public void Write(BooleanInListExpression expression)
     {
@@ -309,14 +317,14 @@ namespace tsqlc.Util
       using (Indent(2))
       {
         Write(expression.List.First());
+        WriteLine();
         foreach (var val in expression.List.Skip(1))
         {
-          WriteLine();
           Write(",");
           Write(val);
+          WriteLine();
         }
       }
-      WriteLine();
       Write(")");
     }
 
@@ -338,9 +346,26 @@ namespace tsqlc.Util
 
     public void Write(BooleanRangeExpression expression)
     {
+      string op;
+      switch (expression.RangeType)
+      {
+        case RangeOperatorType.All:
+          op = " ALL"; break;
+        case RangeOperatorType.Any:
+          op = " ANY"; break;
+        case RangeOperatorType.Some:
+          op = " SOME"; break;
+        default:
+          throw new NotSupportedException();
+      }
+
       Write(expression.Left);
+      Write(op);
       Write(GetBooleanOperator(expression.Type));
-      Write(expression.Subquery);
+      WriteLine("(");
+      using (Indent(2))
+        Write(expression.Subquery);
+      Write(")");
     }
 
     public void Write(BooleanComparisonExpression expression)
