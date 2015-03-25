@@ -33,6 +33,6 @@ namespace tsqlc.AST
 {
   public class BlockStatement : Statement
   {
-    public ICollection<Statement> Statements { get; set; }
+    public ICollection<Statement> Body { get; set; }
   }
 }

@@ -51,10 +51,10 @@ namespace tsqlc.Tests
       Assert.AreEqual(1, ast.Length, "must only contain one statement");
       Assert.AreEqual(typeof(BlockStatement), statement.GetType(), "not the right statement");
 
-      Assert.AreEqual(typeof(SelectStatement), statement.Statements[0].GetType(), "not the right statement");
-      Assert.IsTrue(statement.Statements[0].HasTerminator, "not the right statement");
-      Assert.AreEqual(typeof(DeleteStatement), statement.Statements[1].GetType(), "not the right statement");
-      Assert.IsFalse(statement.Statements[1].HasTerminator, "not the right statement");
+      Assert.AreEqual(typeof(SelectStatement), statement.Body[0].GetType(), "not the right statement");
+      Assert.IsTrue(statement.Body[0].HasTerminator, "not the right statement");
+      Assert.AreEqual(typeof(DeleteStatement), statement.Body[1].GetType(), "not the right statement");
+      Assert.IsFalse(statement.Body[1].HasTerminator, "not the right statement");
     }
 
     [TestMethod]

@@ -236,7 +236,7 @@ namespace tsqlc.Parse
       while (!CurrentTypeIs(TokenType.K_END))
         statements.Add(NextStatement());
       Match(TokenType.K_END);
-      return new BlockStatement { Statements = statements };
+      return new BlockStatement { Body = statements };
     }
 
     private IfStatement If()
@@ -430,9 +430,9 @@ namespace tsqlc.Parse
       return alias;
     }
 
-    private ICollection<Column> ColumnList()
+    private ICollection<IColumn> ColumnList()
     {
-      var columns = new List<Column>();
+      var columns = new List<IColumn>();
       do
         columns.Add(Column());
       while (Consume(TokenType.Comma));
@@ -440,7 +440,7 @@ namespace tsqlc.Parse
       return columns;
     }
 
-    private Column Column()
+    private IColumn Column()
     {
       if (Consume(TokenType.StarOp))
         return new StarColumn { };

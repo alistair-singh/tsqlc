@@ -30,15 +30,16 @@ using System.Text;
 
 namespace tsqlc.AST
 {
-  public class Column { }
+  public interface IColumn { }
 
-  public class SetExpressionColumn : Column
+  //TODO: Not sure if this needs to be a Column
+  public class SetExpressionColumn : IColumn
   {
     public ReferenceExpression Reference { get; set; }
     public Expression Expression { get; set; }
   }
 
-  public class StarColumn : Column
+  public class StarColumn : IColumn
   {
     public string TableAlias { get; set; }
 
@@ -48,7 +49,7 @@ namespace tsqlc.AST
     }
   }
 
-  public class ExpressionColumn : Column
+  public class ExpressionColumn : IColumn
   {
     public Expression Expression { get; set; }
     public string Alias { get; set; }

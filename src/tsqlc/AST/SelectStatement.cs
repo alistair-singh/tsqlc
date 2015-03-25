@@ -34,7 +34,7 @@ namespace tsqlc.AST
   public class SelectStatement : TerminatedStatement
   {
     public Expression TopExpression { get; set; }
-    public ICollection<Column> ColumnList { get; set; }
+    public ICollection<IColumn> ColumnList { get; set; }
     public ICollection<From> FromList { get; set; }
     public BooleanExpression WhereClause { get; set; }
 
