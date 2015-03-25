@@ -123,7 +123,19 @@ namespace tsqlc.Util
 
     private void Write(UpdateStatement statement)
     {
-      Write("UPDATE ");
+      Write("UPDATE  ");
+      WriteTop(statement.TopExpression);
+
+      using (Indent(8))
+        Write(statement.Target);
+
+      WriteLine();
+      Write("SET     ");
+      using (Indent(8))
+        WriteColumnList(statement.SetColumnList);
+
+      Write(statement.FromList);
+      WriteWhereClause(statement.WhereClause);
     }
 
     private void Write(InsertStatement statement)
@@ -150,16 +162,7 @@ namespace tsqlc.Util
     {
       Write("SELECT  ");
       WriteTop(statement.TopExpression);
-
-      using (Indent(8))
-      {
-        DoBetween(statement.ColumnList, Write, (n, p) =>
-        {
-          WriteLine();
-          Write(",");
-        });
-      }
-
+      WriteColumnList(statement.ColumnList);
       Write(statement.FromList);
       WriteWhereClause(statement.WhereClause);
 
@@ -196,6 +199,17 @@ namespace tsqlc.Util
       using (Indent(8))
         Write(expression);
     }
+
+    private void WriteColumnList(IEnumerable<IColumn> columns)
+    {
+      using (Indent(8))
+        DoBetween(columns, Write, (n, p) =>
+        {
+          WriteLine();
+          Write(",");
+        });
+    }
+
     #endregion
 
     #region Columns
@@ -206,6 +220,8 @@ namespace tsqlc.Util
         Write(column as StarColumn);
       else if (column is ExpressionColumn)
         Write(column as ExpressionColumn);
+      else if (column is SetExpressionColumn)
+        Write(column as SetExpressionColumn);
       else
         throw new Exception(string.Format("Cannot handle type {0}", column.GetType()));
     }
@@ -219,7 +235,16 @@ namespace tsqlc.Util
 
     private void Write(StarColumn column)
     {
+      if (!string.IsNullOrWhiteSpace(column.TableAlias))
+        Write("{0}.", column.TableAlias);
       Write("*");
+    }
+
+    private void Write(SetExpressionColumn column)
+    {
+      Write(column.Reference.Identifier);
+      Write(" = ");
+      Write(column.Expression);
     }
 
     #endregion
@@ -649,14 +674,16 @@ namespace tsqlc.Util
       _isNewLine = true;
     }
 
-    private static void DoBetween<T>(ICollection<T> collection, Action<T> action, Action<T, T> betweenAction)
+    private static void DoBetween<T>(IEnumerable<T> collection, Action<T> action, Action<T, T> betweenAction)
     {
-      var prev = collection.FirstOrDefault();
-      if (prev != null)
+      var enumerator = collection.GetEnumerator();
+      if(enumerator.MoveNext())
       {
+        var prev = enumerator.Current;
         action(prev);
-        foreach (var next in collection.Skip(1))
+        while(enumerator.MoveNext())
         {
+          var next = enumerator.Current;
           betweenAction(prev, next);
           action(next);
           prev = next;

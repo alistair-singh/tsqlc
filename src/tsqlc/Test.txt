@@ -32,7 +32,7 @@ select top (23) (1 + 1) * 2 * 3 + 23 / 3 as t,s,*,1,dbo.fn_clr_do(), 2 as [     
           select col1, col2 from tb_test3 inner join tb_test4 on yy=xx where 1 = 3 and name in (select name from tb_test4)
 
 update tb_test with (nolock) set x = 1
-from x inner join y on x = y where 1 =2 or 4 =2
+from x u(NOLOCK) inner join y on x = y where (1 =2 or 4 =2)
 
 while @@Rowcount <> 0
   delete top 5 x from xxxx x (TABLOCKX) where 1 = 2 and exists(select x from y (NOLOCK) where name like 'hello%');
