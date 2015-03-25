@@ -140,7 +140,33 @@ namespace tsqlc.Util
 
     private void Write(InsertStatement statement)
     {
-      Write("INSERT ");
+      Write("INSERT  ");
+      WriteTop(statement.TopExpression);
+
+      using (Indent(8))
+        Write(statement.Target);
+
+      WriteColumnSpecification(statement.ColumnSpecification);
+      WriteLine();
+
+      if (statement is SelectInsertStatement)
+        Write(statement as SelectInsertStatement);
+      else if (statement is ValuesInsertStatement)
+        Write(statement as ValuesInsertStatement);
+      else
+        throw new NotSupportedException();
+    }
+
+    private void Write(SelectInsertStatement statement)
+    {
+      Write(statement.SelectStatement);
+    }
+
+    private void Write(ValuesInsertStatement statement)
+    {
+      Write("VALUES  ");
+      using (Indent(8))
+        Write(statement.Values);
     }
 
     private void Write(IfStatement statement)
@@ -168,6 +194,22 @@ namespace tsqlc.Util
 
       if (statement.HasTerminator)
         Write(";");
+    }
+
+    private void Write(Values values)
+    {
+      DoBetween(values.Rows, Write, (n, p) =>
+      {
+        WriteLine();
+        Write(",");
+      });
+    }
+
+    private void Write(ValuesRow row)
+    {
+      Write("(");
+      DoBetween(row.Expressions, Write, (n, p) => Write(","));
+      Write(")");
     }
 
     private void WriteBody(Statement statement)
@@ -208,6 +250,28 @@ namespace tsqlc.Util
           WriteLine();
           Write(",");
         });
+    }
+
+    private void WriteColumnSpecification(IEnumerable<ReferenceExpression> columns)
+    {
+      if (columns == null || !columns.Any())
+        return;
+
+      using (Indent(8))
+      {
+        Write(" (");
+        WriteLine();
+        using (Indent(2))
+        {
+          DoBetween(columns, Write, (n, p) =>
+          {
+            WriteLine();
+            Write(",");
+          });
+        }
+        WriteLine();
+        Write(")");
+      }
     }
 
     #endregion
@@ -677,11 +741,11 @@ namespace tsqlc.Util
     private static void DoBetween<T>(IEnumerable<T> collection, Action<T> action, Action<T, T> betweenAction)
     {
       var enumerator = collection.GetEnumerator();
-      if(enumerator.MoveNext())
+      if (enumerator.MoveNext())
       {
         var prev = enumerator.Current;
         action(prev);
-        while(enumerator.MoveNext())
+        while (enumerator.MoveNext())
         {
           var next = enumerator.Current;
           betweenAction(prev, next);

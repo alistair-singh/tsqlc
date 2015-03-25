@@ -88,7 +88,7 @@ namespace tsqlc.Parse
       Match(TokenType.K_INSERT);
       var top = Top();
       Consume(TokenType.K_INTO);
-      var target = From(allowAlias: false, allowOnClause: false);
+      var target = From(allowAlias: false, allowOnClause: false, requireWithOnTableHints: true);
       var columnSpecifier = ColumnListSpecification();
 
       if (CurrentTypeIs(TokenType.K_VALUES))
@@ -335,11 +335,11 @@ namespace tsqlc.Parse
       return froms;
     }
 
-    private From From(JoinType type = JoinType.PRIMARY, bool allowAlias = true, bool allowOnClause = true)
+    private From From(JoinType type = JoinType.PRIMARY, bool allowAlias = true,
+      bool allowOnClause = true, bool requireWithOnTableHints = false)
     {
-      if (Current != null && Current.Type == TokenType.OpenBracket)
+      if (Consume(TokenType.OpenBracket))
       {
-        Match(TokenType.OpenBracket);
         var subquery = Select();
         Match(TokenType.CloseBracket);
         var alias = allowAlias ? TableAlias() : string.Empty;
@@ -355,38 +355,7 @@ namespace tsqlc.Parse
       {
         var reference = ReferenceExpression();
         var alias = allowAlias ? TableAlias() : string.Empty;
-        if (Current != null && Current.Type == TokenType.K_WITH)
-        {
-          Consume();
-          if (Current == null || Current.Type != TokenType.OpenBracket)
-            throw Unexpected(Current);
-        }
-
-        //TODO: parser must break when no locking hints are specified
-        //      ... or should it...
-        var hints = new List<TableHint>();
-        if (Current != null && Current.Type == TokenType.OpenBracket)
-        {
-          Match(TokenType.OpenBracket);
-          //TODO: Refactor here to use Consume
-          while (Current != null && (Current.Type == TokenType.Identifier || Current.Type == TokenType.K_HOLDLOCK))
-          {
-            TableHint hint;
-            if (TableHintMap.TryLookUp(Current.Character, out hint))
-              hints.Add(hint);
-            else
-              throw Unexpected(Current);
-
-            Consume();
-
-            if (Consume(TokenType.Comma))
-              continue;
-            else
-              break;
-          }
-          Match(TokenType.CloseBracket);
-        }
-
+        var hints = TableHints(requireWithOnTableHints);
         var onClause = allowOnClause ? OnClause(type) : null;
         return new ReferenceFrom
         {
@@ -397,6 +366,41 @@ namespace tsqlc.Parse
           OnClause = onClause
         };
       }
+    }
+
+    private ICollection<TableHint> TableHints(bool requireWithOnTableHints)
+    {
+      var hints = new List<TableHint>();
+
+      if (Consume(TokenType.K_WITH))
+      {
+        if (!CurrentTypeIs(TokenType.OpenBracket))
+          throw Unexpected(Current);
+      }
+      else if (requireWithOnTableHints)
+        return hints;
+
+      //TODO: parser must break when no locking hints are specified
+      //      ... or should it...
+      if (Consume(TokenType.OpenBracket))
+      {
+        do
+        {
+          if (CurrentIs(TokenType.Identifier, TokenType.K_HOLDLOCK).HasValue)
+          {
+            TableHint hint;
+            if (TableHintMap.TryLookUp(Current.Character, out hint))
+              hints.Add(hint);
+            else
+              throw Unexpected(Current);
+
+            Consume();
+          }
+        }
+        while (Consume(TokenType.Comma));
+        Match(TokenType.CloseBracket);
+      }
+      return hints;
     }
 
     private BooleanExpression OnClause(JoinType type)
@@ -506,7 +510,7 @@ namespace tsqlc.Parse
       if (CurrentTypeIs(TokenType.K_EXISTS))
         return BooleanExists();
 
-      if(Consume(TokenType.OpenBracket))
+      if (Consume(TokenType.OpenBracket))
       {
         var expression = BooleanExpression();
         Match(TokenType.CloseBracket);

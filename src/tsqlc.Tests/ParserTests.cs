@@ -493,5 +493,33 @@ namespace tsqlc.Tests
 
       Assert.IsTrue(statement.HasTerminator, "does not have terminator");
     }
+
+    [TestMethod]
+    public void TestInsertWithNoHintsAndColumnList()
+    {
+      var sql = @"insert dbo.tb_test (aa,bb,cc) select col1, col2, col3 from tb_y;";
+
+      var ast = sql.Parse().ToArray();
+      dynamic statement = ast.FirstOrDefault();
+
+      Assert.AreEqual(1, ast.Length, "must only contain one statement");
+      Assert.AreEqual(typeof(SelectInsertStatement), statement.GetType(), "not the right statement");
+      Assert.AreEqual(null, statement.TopExpression, "top expression failed");
+
+      Assert.AreEqual(3, statement.ColumnSpecification.Count, "incorrect number of columns specified");
+      Assert.AreEqual("aa", statement.ColumnSpecification[0].Identifier, "incorrect columns specified");
+      Assert.AreEqual("bb", statement.ColumnSpecification[1].Identifier, "incorrect columns specified");
+      Assert.AreEqual("cc", statement.ColumnSpecification[2].Identifier, "incorrect columns specified");
+      Assert.AreEqual("dbo.tb_test", statement.Target.Name.Identifier, "incorrect number of columns specified");
+      Assert.AreEqual(0, statement.Target.Hints.Count, "incorrect number of hints");
+      Assert.AreEqual(3, statement.SelectStatement.ColumnList.Count, "invalid columns");
+      Assert.AreEqual("col1", statement.SelectStatement.ColumnList[0].Expression.Identifier, "invalid columns");
+      Assert.AreEqual("col2", statement.SelectStatement.ColumnList[1].Expression.Identifier, "invalid columns");
+      Assert.AreEqual("col3", statement.SelectStatement.ColumnList[2].Expression.Identifier, "invalid columns");
+      Assert.AreEqual(1, statement.SelectStatement.FromList.Count, "invalid from");
+      Assert.AreEqual("tb_y", statement.SelectStatement.FromList[0].Name.Identifier, "invalid from");
+
+      Assert.IsTrue(statement.HasTerminator, "does not have terminator");
+    }
   }
 }
