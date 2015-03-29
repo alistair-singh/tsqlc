@@ -102,10 +102,27 @@ namespace tsqlc
       return FromBuffer(FromFile(path)).Lex();
     }
 
+    public static void Visit(this IEnumerable<IStatement> statements, ITreeVisitor visitor)
+    {
+      foreach (var statement in statements)
+        statement.Accept(visitor);
+    }
+
     public static void Write(this IEnumerable<IStatement> statements, TextWriter writer)
     {
       var sqlWriter = new SqlWriter(writer);
-      sqlWriter.AppendRange(statements);
+      statements.DoBetween(n => n.Accept(sqlWriter), (n, p) =>
+      {
+        writer.WriteLine();
+        writer.WriteLine();
+      });
+    }
+
+    public static string WriteString(this IEnumerable<IStatement> statements)
+    {
+      var str = new StringWriter();
+      statements.Write(str);
+      return str.ToString();
     }
 
     private static IEnumerable<char> FromBuffer(byte[] buffer)

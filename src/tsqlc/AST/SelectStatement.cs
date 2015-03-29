@@ -39,6 +39,6 @@ namespace tsqlc.AST
     public ICollection<IFrom> FromList { get; set; }
     public IBooleanExpression WhereClause { get; set; }
     public bool HasTerminator { get; set; }
-    public void Accept(ITreeVisitor visitor) { visitor.visit(this); }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 }

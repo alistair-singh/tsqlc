@@ -40,6 +40,6 @@ namespace tsqlc.AST
     public IBooleanExpression WhereClause { get; set; }
     public ICollection<SetExpressionColumn> SetColumnList { get; set; }
     public bool HasTerminator { get; set; }
-    public void Accept(ITreeVisitor visitor) { visitor.visit(this); }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 }

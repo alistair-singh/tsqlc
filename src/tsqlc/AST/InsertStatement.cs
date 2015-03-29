@@ -32,14 +32,16 @@ using tsqlc.Util;
 
 namespace tsqlc.AST
 {
-  public class ValuesRow
+  public class ValuesRow : ITreeVisitable
   {
     public ICollection<IExpression> Expressions { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 
-  public class Values
+  public class Values : ITreeVisitable
   {
     public ICollection<ValuesRow> Rows { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 
   public interface IInsertStatement : ITerminatedStatement
@@ -56,7 +58,7 @@ namespace tsqlc.AST
     public ICollection<ReferenceExpression> ColumnSpecification { get; set; }
     public SelectStatement SelectStatement { get; set; }
     public bool HasTerminator { get; set; }
-    public void Accept(ITreeVisitor visitor) { visitor.visit(this); }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
   
   public class ValuesInsertStatement : IInsertStatement
@@ -66,6 +68,6 @@ namespace tsqlc.AST
     public ICollection<ReferenceExpression> ColumnSpecification { get; set; }
     public Values Values { get; set; }
     public bool HasTerminator { get; set; }
-    public void Accept(ITreeVisitor visitor) { visitor.visit(this); }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 }

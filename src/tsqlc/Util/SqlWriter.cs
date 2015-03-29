@@ -34,7 +34,7 @@ using tsqlc.AST;
 namespace tsqlc.Util
 {
   //TODO: Implement with visitor pattern
-  public class SqlWriter
+  public class SqlWriter : ITreeVisitor
   {
     private TextWriter _writer;
     private int _indentLevel;
@@ -47,48 +47,15 @@ namespace tsqlc.Util
       _isNewLine = true;
     }
 
-    public void Append(IStatement statement)
-    {
-      Write(statement);
-      WriteLine();
-      WriteLine();
-    }
-
-    public void AppendRange(IEnumerable<IStatement> statements)
-    {
-      foreach (var statement in statements)
-        Append(statement);
-    }
-
     #region Statements
 
-    private void Write(IStatement statement)
-    {
-      if (statement is SelectStatement)
-        Write(statement as SelectStatement);
-      else if (statement is IfStatement)
-        Write(statement as IfStatement);
-      else if (statement is BlockStatement)
-        Write(statement as BlockStatement);
-      else if (statement is DeleteStatement)
-        Write(statement as DeleteStatement);
-      else if (statement is IInsertStatement)
-        Write(statement as IInsertStatement);
-      else if (statement is UpdateStatement)
-        Write(statement as UpdateStatement);
-      else if (statement is WhileStatement)
-        Write(statement as WhileStatement);
-      else
-        throw new Exception(string.Format("Cannot handle type {0}", statement.GetType()));
-    }
-
-    private void Write(BlockStatement statement)
+    public void Visit(BlockStatement statement)
     {
       Write("BEGIN");
       WriteLine();
 
       using (Indent(2))
-        DoBetween(statement.Body, Write, (p, n) =>
+        statement.Body.DoBetween(n => n.Accept(this), (p, n) =>
         {
           WriteLine();
           WriteLine();
@@ -98,36 +65,36 @@ namespace tsqlc.Util
       Write("END");
     }
 
-    private void Write(WhileStatement statement)
+    public void Visit(WhileStatement statement)
     {
       Write("WHILE ");
       Write(statement.Test);
       using (Indent(2))
       {
         WriteLine();
-        Write(statement.Body);
+        statement.Body.Accept(this);
       }
     }
 
-    private void Write(DeleteStatement statement)
+    public void Visit(DeleteStatement statement)
     {
       Write("DELETE  ");
       WriteTop(statement.TopExpression);
 
       using (Indent(8))
-        Write(statement.Target);
+        statement.Target.Accept(this);
 
       Write(statement.FromList);
       WriteWhereClause(statement.WhereClause);
     }
 
-    private void Write(UpdateStatement statement)
+    public void Visit(UpdateStatement statement)
     {
       Write("UPDATE  ");
       WriteTop(statement.TopExpression);
 
       using (Indent(8))
-        Write(statement.Target);
+        statement.Target.Accept(this);
 
       WriteLine();
       Write("SET     ");
@@ -138,38 +105,21 @@ namespace tsqlc.Util
       WriteWhereClause(statement.WhereClause);
     }
 
-    private void Write(IInsertStatement statement)
+    public void Visit(SelectInsertStatement statement)
     {
-      Write("INSERT  ");
-      WriteTop(statement.TopExpression);
-
-      using (Indent(8))
-        Write(statement.Target);
-
-      WriteColumnSpecification(statement.ColumnSpecification);
-      WriteLine();
-
-      if (statement is SelectInsertStatement)
-        Write(statement as SelectInsertStatement);
-      else if (statement is ValuesInsertStatement)
-        Write(statement as ValuesInsertStatement);
-      else
-        throw new NotSupportedException();
+      WriteInsert(statement);
+      statement.SelectStatement.Accept(this);
     }
 
-    private void Write(SelectInsertStatement statement)
+    public void Visit(ValuesInsertStatement statement)
     {
-      Write(statement.SelectStatement);
-    }
-
-    private void Write(ValuesInsertStatement statement)
-    {
+      WriteInsert(statement);
       Write("VALUES  ");
       using (Indent(8))
-        Write(statement.Values);
+        Visit(statement.Values);
     }
 
-    private void Write(IfStatement statement)
+    public void Visit(IfStatement statement)
     {
       Write("IF ");
       Write(statement.Test);
@@ -184,7 +134,7 @@ namespace tsqlc.Util
       }
     }
 
-    private void Write(SelectStatement statement)
+    public void Visit(SelectStatement statement)
     {
       Write("SELECT  ");
       WriteTop(statement.TopExpression);
@@ -196,29 +146,47 @@ namespace tsqlc.Util
         Write(";");
     }
 
-    private void Write(Values values)
+    public void Visit(EmptyStatement statement)
     {
-      DoBetween(values.Rows, Write, (n, p) =>
+      if (statement.HasTerminator)
+        Write(";");
+    }
+
+    public void Visit(Values values)
+    {
+      values.Rows.DoBetween(Visit, (n, p) =>
       {
         WriteLine();
         Write(",");
       });
     }
 
-    private void Write(ValuesRow row)
+    public void Visit(ValuesRow row)
     {
       Write("(");
-      DoBetween(row.Expressions, Write, (n, p) => Write(","));
+      row.Expressions.DoBetween(Visit, (n, p) => Write(","));
       Write(")");
+    }
+
+    private void WriteInsert(IInsertStatement statement)
+    {
+      Write("INSERT  ");
+      WriteTop(statement.TopExpression);
+
+      using (Indent(8))
+        statement.Target.Accept(this);
+
+      WriteColumnSpecification(statement.ColumnSpecification);
+      WriteLine();
     }
 
     private void WriteBody(IStatement statement)
     {
       if (statement is BlockStatement)
-        Write(statement);
+        statement.Accept(this);
       else
         using (Indent(2))
-          Write(statement);
+          statement.Accept(this);
     }
 
     private void WriteTop(IExpression expression)
@@ -227,7 +195,7 @@ namespace tsqlc.Util
         return;
 
       Write("TOP ");
-      Write(expression);
+      Visit(expression);
       WriteLine();
     }
 
@@ -245,7 +213,7 @@ namespace tsqlc.Util
     private void WriteColumnList(IEnumerable<IColumn> columns)
     {
       using (Indent(8))
-        DoBetween(columns, Write, (n, p) =>
+        columns.DoBetween(Write, (n, p) =>
         {
           WriteLine();
           Write(",");
@@ -263,7 +231,7 @@ namespace tsqlc.Util
         WriteLine();
         using (Indent(2))
         {
-          DoBetween(columns, Write, (n, p) =>
+          columns.DoBetween(Visit, (n, p) =>
           {
             WriteLine();
             Write(",");
@@ -278,85 +246,67 @@ namespace tsqlc.Util
 
     #region Columns
 
-    private void Write(IColumn column)
+    public void Visit(ExpressionColumn column)
     {
-      if (column is StarColumn)
-        Write(column as StarColumn);
-      else if (column is ExpressionColumn)
-        Write(column as ExpressionColumn);
-      else if (column is SetExpressionColumn)
-        Write(column as SetExpressionColumn);
-      else
-        throw new Exception(string.Format("Cannot handle type {0}", column.GetType()));
-    }
-
-    private void Write(ExpressionColumn column)
-    {
-      Write(column.Expression);
+      Visit(column.Expression);
       if (!string.IsNullOrWhiteSpace(column.Alias))
         Write(" AS {0}", column.Alias);
     }
 
-    private void Write(StarColumn column)
+    public void Visit(StarColumn column)
     {
       if (!string.IsNullOrWhiteSpace(column.TableAlias))
         Write("{0}.", column.TableAlias);
       Write("*");
     }
 
-    private void Write(SetExpressionColumn column)
+    public void Visit(SetExpressionColumn column)
     {
       Write(column.Reference.Identifier);
       Write(" = ");
-      Write(column.Expression);
+      Visit(column.Expression);
+    }
+
+    private void Write(IColumn column)
+    {
+      column.Accept(this);
     }
 
     #endregion
 
     #region Froms
 
-    private void Write(ICollection<IFrom> froms)
-    {
-      if (froms != null && froms.Any())
-      {
-        WriteLine();
-        Write("FROM    ");
-        using (Indent(8))
-          DoBetween(froms, Write, (n, p) => WriteLine());
-      }
-    }
-
-    private void Write(IFrom from)
-    {
-      if (from is SubqueryFrom)
-        Write(from as SubqueryFrom);
-      else if (from is ReferenceFrom)
-        Write(from as ReferenceFrom);
-      else
-        throw new NotSupportedException();
-    }
-
-    private void Write(SubqueryFrom from)
+    public void Visit(SubqueryFrom from)
     {
       Write(GetJoinType(from.Join));
       Write("(");
       using (Indent(2))
       {
         WriteLine();
-        Write(from.Subquery);
+        from.Subquery.Accept(this);
       }
       WriteLine();
       Write(")");
       WriteOnClause(from.OnClause);
     }
 
-    private void Write(ReferenceFrom from)
+    public void Visit(ReferenceFrom from)
     {
       Write(GetJoinType(from.Join));
-      Write(from.Name);
+      Visit(from.Name);
       WriteAlias(from.Alias);
       WriteTableHints(from.Hints);
       WriteOnClause(from.OnClause);
+    }
+
+    private void Write(ICollection<IFrom> froms)
+    {
+      if (froms == null || !froms.Any())
+        return;
+      WriteLine();
+      Write("FROM    ");
+      using (Indent(8))
+        froms.DoBetween(n => n.Accept(this), (n, p) => WriteLine());
     }
 
     private void WriteTableHints(ICollection<TableHint> hints)
@@ -420,33 +370,7 @@ namespace tsqlc.Util
 
     #region Boolean Expressions
 
-    private void Write(IBooleanExpression expression)
-    {
-      if (expression is BooleanBetweenExpression)
-        Write(expression as BooleanBetweenExpression);
-      else if (expression is BooleanBinaryExpression)
-        Write(expression as BooleanBinaryExpression);
-      else if (expression is BooleanExistsExpression)
-        Write(expression as BooleanExistsExpression);
-      else if (expression is BooleanInListExpression)
-        Write(expression as BooleanInListExpression);
-      else if (expression is BooleanInSubqueryExpression)
-        Write(expression as BooleanInSubqueryExpression);
-      else if (expression is BooleanNotExpresison)
-        Write(expression as BooleanNotExpresison);
-      else if (expression is BooleanRangeExpression)
-        Write(expression as BooleanRangeExpression);
-      else if (expression is BooleanComparisonExpression)
-        Write(expression as BooleanComparisonExpression);
-      else if (expression is BooleanNullCheckExpression)
-        Write(expression as BooleanNullCheckExpression);
-      else if (expression is GroupedBooleanExpression)
-        Write(expression as GroupedBooleanExpression);
-      else
-        throw new NotSupportedException();
-    }
-
-    public void Write(GroupedBooleanExpression expression)
+    public void Visit(GroupedBooleanExpression expression)
     {
       Write("(");
       using (Indent(2))
@@ -458,16 +382,16 @@ namespace tsqlc.Util
       Write(")");
     }
 
-    public void Write(BooleanBetweenExpression expression)
+    public void Visit(BooleanBetweenExpression expression)
     {
-      Write(expression.Left);
+      Visit(expression.Left);
       Write(" BETWEEN ");
-      Write(expression.First);
+      Visit(expression.First);
       Write(" AND ");
-      Write(expression.Second);
+      Visit(expression.Second);
     }
 
-    public void Write(BooleanBinaryExpression expression)
+    public void Visit(BooleanBinaryExpression expression)
     {
       string op;
       switch (expression.Type)
@@ -485,24 +409,24 @@ namespace tsqlc.Util
       Write(expression.Right);
     }
 
-    public void Write(BooleanExistsExpression expression)
+    public void Visit(BooleanExistsExpression expression)
     {
       Write("EXISTS (");
       WriteLine();
       using (Indent(2))
-        Write(expression.Subquery);
+        expression.Subquery.Accept(this);
       WriteLine();
       Write(")");
     }
 
-    public void Write(BooleanInListExpression expression)
+    public void Visit(BooleanInListExpression expression)
     {
-      Write(expression.Left);
+      Visit(expression.Left);
       Write(expression.Not ? " NOT IN (" : " IN (");
       WriteLine();
 
       using (Indent(2))
-        DoBetween(expression.List, Write, (n, p) =>
+        expression.List.DoBetween(Visit, (n, p) =>
         {
           WriteLine();
           Write(",");
@@ -512,24 +436,24 @@ namespace tsqlc.Util
       Write(")");
     }
 
-    public void Write(BooleanInSubqueryExpression expression)
+    public void Visit(BooleanInSubqueryExpression expression)
     {
-      Write(expression.Left);
+      Visit(expression.Left);
       Write(expression.Not ? " NOT IN (" : " IN (");
       WriteLine();
       using (Indent(2))
-        Write(expression.Subquery);
+        Visit(expression.Subquery);
       WriteLine();
       Write(")");
     }
 
-    public void Write(BooleanNotExpresison expression)
+    public void Visit(BooleanNotExpresison expression)
     {
       Write("NOT ");
       Write(expression.Right);
     }
 
-    public void Write(BooleanRangeExpression expression)
+    public void Visit(BooleanRangeExpression expression)
     {
       string op;
       switch (expression.RangeType)
@@ -544,27 +468,27 @@ namespace tsqlc.Util
           throw new NotSupportedException();
       }
 
-      Write(expression.Left);
+      Visit(expression.Left);
       Write(op);
       Write(GetBooleanOperator(expression.Type));
       Write("(");
       WriteLine();
       using (Indent(2))
-        Write(expression.Subquery);
+        Visit(expression.Subquery);
       WriteLine();
       Write(")");
     }
 
-    public void Write(BooleanComparisonExpression expression)
+    public void Visit(BooleanComparisonExpression expression)
     {
-      Write(expression.Left);
+      Visit(expression.Left);
       Write(GetBooleanOperator(expression.Type));
-      Write(expression.Right);
+      Visit(expression.Right);
     }
 
-    public void Write(BooleanNullCheckExpression expression)
+    public void Visit(BooleanNullCheckExpression expression)
     {
-      Write(expression.Left);
+      Visit(expression.Left);
       Write(expression.IsNull ? " IS NULL" : " IS NOT NULL");
     }
 
@@ -595,40 +519,23 @@ namespace tsqlc.Util
       }
     }
 
+    private void Write(IBooleanExpression expression)
+    {
+      expression.Accept(this);
+    }
+
     #endregion
 
     #region Expression
 
-    public void Write(IExpression expression)
-    {
-      if (expression is ConstantExpression)
-        Write(expression as ConstantExpression);
-      else if (expression is ReferenceExpression)
-        Write(expression as ReferenceExpression);
-      else if (expression is BinaryOperationExpression)
-        Write(expression as BinaryOperationExpression);
-      else if (expression is GroupedExpression)
-        Write(expression as GroupedExpression);
-      else if (expression is UnaryExpression)
-        Write(expression as UnaryExpression);
-      else if (expression is FunctionCallExpression)
-        Write(expression as FunctionCallExpression);
-      else if (expression is SelectStatementExpression)
-        Write(expression as SelectStatementExpression);
-      else if (expression is NullExpression)
-        Write(expression as NullExpression);
-      else
-        throw new NotSupportedException();
-    }
-
-    public void Write(GroupedExpression expression)
+    public void Visit(GroupedExpression expression)
     {
       Write("(");
-      Write(expression.Group);
+      Visit(expression.Group);
       Write(")");
     }
 
-    public void Write(BinaryOperationExpression expression)
+    public void Visit(BinaryOperationExpression expression)
     {
       string op;
       switch (expression.Type)
@@ -652,17 +559,17 @@ namespace tsqlc.Util
         default:
           throw new NotSupportedException();
       }
-      Write(expression.Left);
+      Visit(expression.Left);
       Write(op);
-      Write(expression.Right);
+      Visit(expression.Right);
     }
 
-    public void Write(ReferenceExpression expression)
+    public void Visit(ReferenceExpression expression)
     {
       Write(expression.Identifier);
     }
 
-    public void Write(UnaryExpression expression)
+    public void Visit(UnaryExpression expression)
     {
       string op;
       switch (expression.Type)
@@ -677,28 +584,28 @@ namespace tsqlc.Util
           throw new NotSupportedException();
       }
       Write(op);
-      Write(expression.Right);
+      Visit(expression.Right);
     }
 
-    public void Write(FunctionCallExpression expression)
+    public void Visit(FunctionCallExpression expression)
     {
-      Write(expression.Function);
+      Visit(expression.Function);
       Write("(");
-      DoBetween(expression.Parameters, Write, (n, p) => Write(", "));
+      expression.Parameters.DoBetween(Visit, (n, p) => Write(", "));
       Write(")");
     }
 
-    public void Write(SelectStatementExpression expression)
+    public void Visit(SelectStatementExpression expression)
     {
       Write("(");
       WriteLine();
       using (Indent(2))
-        Write(expression.Statement);
+        expression.Statement.Accept(this);
       WriteLine();
       Write(")");
     }
 
-    public void Write(ConstantExpression expression)
+    public void Visit(ConstantExpression expression)
     {
       switch (expression.Type)
       {
@@ -715,22 +622,17 @@ namespace tsqlc.Util
       }
     }
 
-    public void Write(NullExpression expression)
+    public void Visit(NullExpression expression)
     {
       Write("NULL");
     }
 
-    #endregion
-
-    public void Write(string format, params object[] arg0)
+    public void Visit(IExpression expression)
     {
-      if (_isNewLine)
-      {
-        _isNewLine = false;
-        _writer.Write(string.Empty.PadLeft(_indentLevel));
-      }
-      _writer.Write(format, arg0);
+      expression.Accept(this);
     }
+
+    #endregion
 
     public void WriteLine()
     {
@@ -738,21 +640,14 @@ namespace tsqlc.Util
       _isNewLine = true;
     }
 
-    private static void DoBetween<T>(IEnumerable<T> collection, Action<T> action, Action<T, T> betweenAction)
+    private void Write(string format, params object[] arg0)
     {
-      var enumerator = collection.GetEnumerator();
-      if (enumerator.MoveNext())
+      if (_isNewLine)
       {
-        var prev = enumerator.Current;
-        action(prev);
-        while (enumerator.MoveNext())
-        {
-          var next = enumerator.Current;
-          betweenAction(prev, next);
-          action(next);
-          prev = next;
-        }
+        _isNewLine = false;
+        _writer.Write(string.Empty.PadLeft(_indentLevel));
       }
+      _writer.Write(format, arg0);
     }
 
     private IDisposable Indent(int numOfSpaces)

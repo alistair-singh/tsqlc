@@ -63,6 +63,7 @@
     <Compile Include="Parse\Token.cs" />
     <Compile Include="Parse\TokenExtensions.cs" />
     <Compile Include="Parse\TokenType.cs" />
+    <Compile Include="Util\CommonExtensions.cs" />
     <Compile Include="Util\ConsoleUtil.cs" />
     <Compile Include="Util\Disposable.cs" />
     <Compile Include="Util\ITreeVisitable.cs" />
