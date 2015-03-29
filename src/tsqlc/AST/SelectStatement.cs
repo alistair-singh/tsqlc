@@ -28,23 +28,17 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using tsqlc.Util;
 
 namespace tsqlc.AST
 {
-  public class SelectStatement : TerminatedStatement
+  public class SelectStatement : ITerminatedStatement
   {
-    public Expression TopExpression { get; set; }
+    public IExpression TopExpression { get; set; }
     public ICollection<IColumn> ColumnList { get; set; }
-    public ICollection<From> FromList { get; set; }
-    public BooleanExpression WhereClause { get; set; }
-
-    public override string ToString()
-    {
-      return string.Format("(:t {0} :c ({1}) :f ({2}) :w {3})",
-        TopExpression,
-        string.Join(", ", ColumnList),
-        string.Join(", ", FromList ?? Enumerable.Empty<From>()),
-        WhereClause);
-    }
+    public ICollection<IFrom> FromList { get; set; }
+    public IBooleanExpression WhereClause { get; set; }
+    public bool HasTerminator { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.visit(this); }
   }
 }

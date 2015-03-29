@@ -28,13 +28,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using tsqlc.Util;
 
 namespace tsqlc.AST
 {
-  public class IfStatement : Statement
+  public class IfStatement : IStatement
   {
-    public BooleanExpression Test { get; set; }
-    public Statement TrueBody { get; set; }
-    public Statement FalseBody { get; set; }
+    public IBooleanExpression Test { get; set; }
+    public IStatement TrueBody { get; set; }
+    public IStatement FalseBody { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 }

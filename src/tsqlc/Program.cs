@@ -79,7 +79,7 @@ namespace tsqlc
           Console.WriteLine("=== statements ===");
           using (Benchmark.Start("parser"))
           {
-            IEnumerable<Statement> statements;
+            IEnumerable<IStatement> statements;
             using (Benchmark.Start("parse"))
               statements = tokens.Parse().ToArray();
 

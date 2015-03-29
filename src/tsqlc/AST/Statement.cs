@@ -23,14 +23,21 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+using tsqlc.Util;
 namespace tsqlc.AST
 {
-  public class Statement
+  public interface IStatement : ITreeVisitable
   {
   }
 
-  public class TerminatedStatement : Statement
+  public interface ITerminatedStatement : IStatement
+  {
+    bool HasTerminator { get; set; }
+  }
+
+  public class EmptyStatement : ITerminatedStatement
   {
     public bool HasTerminator { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 }

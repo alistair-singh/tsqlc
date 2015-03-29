@@ -31,10 +31,10 @@ namespace tsqlc.Tests
       var ast = sql.Parse().ToArray();
 
       Assert.AreEqual(2, ast.Length, "must only contain one statement");
-      Assert.AreEqual(typeof(TerminatedStatement), ast[0].GetType(), "not the right statement");
-      Assert.IsTrue((ast[0] as TerminatedStatement).HasTerminator, "not the right statement");
-      Assert.AreEqual(typeof(TerminatedStatement), ast[1].GetType(), "not the right statement");
-      Assert.IsTrue((ast[1] as TerminatedStatement).HasTerminator, "not the right statement");
+      Assert.AreEqual(typeof(EmptyStatement), ast[0].GetType(), "not the right statement");
+      Assert.IsTrue((ast[0] as EmptyStatement).HasTerminator, "not the right statement");
+      Assert.AreEqual(typeof(EmptyStatement), ast[1].GetType(), "not the right statement");
+      Assert.IsTrue((ast[1] as EmptyStatement).HasTerminator, "not the right statement");
     }
 
     [TestMethod]

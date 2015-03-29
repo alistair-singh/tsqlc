@@ -65,6 +65,7 @@
     <Compile Include="Parse\TokenType.cs" />
     <Compile Include="Util\ConsoleUtil.cs" />
     <Compile Include="Util\Disposable.cs" />
+    <Compile Include="Util\ITreeVisitable.cs" />
     <Compile Include="Util\SqlWriter.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -25,38 +25,33 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using tsqlc.Util;
 
 namespace tsqlc.AST
 {
-  public interface IColumn { }
+  public interface IColumn : ITreeVisitable { }
 
   //TODO: Not sure if this needs to be a Column
   public class SetExpressionColumn : IColumn
   {
     public ReferenceExpression Reference { get; set; }
-    public Expression Expression { get; set; }
+    public IExpression Expression { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 
   public class StarColumn : IColumn
   {
     public string TableAlias { get; set; }
-
-    public override string ToString()
-    {
-      return string.Format("(*->{0})", TableAlias);
-    }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 
   public class ExpressionColumn : IColumn
   {
-    public Expression Expression { get; set; }
+    public IExpression Expression { get; set; }
     public string Alias { get; set; }
-
-    public override string ToString()
-    {
-      return string.Format("({0}->{1})", Expression, Alias);
-    }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 }

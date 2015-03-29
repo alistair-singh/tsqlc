@@ -28,14 +28,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using tsqlc.Util;
 
 namespace tsqlc.AST
 {
-  public class DeleteStatement : TerminatedStatement
+  public class DeleteStatement : ITerminatedStatement
   {
-    public Expression TopExpression { get; set; }
-    public From Target { get; set; }
-    public ICollection<From> FromList { get; set; }
-    public BooleanExpression WhereClause { get; set; }
+    public IExpression TopExpression { get; set; }
+    public IFrom Target { get; set; }
+    public ICollection<IFrom> FromList { get; set; }
+    public IBooleanExpression WhereClause { get; set; }
+    public bool HasTerminator { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 }

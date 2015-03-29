@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System.Collections.Generic;
 using tsqlc.Parse;
+using tsqlc.Util;
 
 //TODO: implement values from clause
 namespace tsqlc.AST
@@ -33,11 +34,11 @@ namespace tsqlc.AST
   public enum TableHint
   {
     NOLOCK = 0,
-    NOEXPAND, FORCESCAN, FORCESEEK, HOLDLOCK, NOWAIT, 
-    PAGLOCK, READCOMMITTED, READCOMMITTEDLOCK, READPAST, 
+    NOEXPAND, FORCESCAN, FORCESEEK, HOLDLOCK, NOWAIT,
+    PAGLOCK, READCOMMITTED, READCOMMITTEDLOCK, READPAST,
     READUNCOMMITTED, REPEATABLEREAD, ROWLOCK, SERIALIZABLE,
-    SNAPSHOT, SPATIAL_WINDOW_MAX_CELLS, TABLOCK, TABLOCKX, 
-    UPDLOCK, XLOCK 
+    SNAPSHOT, SPATIAL_WINDOW_MAX_CELLS, TABLOCK, TABLOCKX,
+    UPDLOCK, XLOCK
   }
 
   public enum JoinType
@@ -52,41 +53,28 @@ namespace tsqlc.AST
     OUTER_APPLY
   }
 
-  public class From
+  public interface IFrom : ITreeVisitable
+  {
+    string Alias { get; set; }
+    JoinType Join { get; set; }
+  }
+
+  public class ReferenceFrom : IFrom
   {
     public string Alias { get; set; }
     public JoinType Join { get; set; }
-  }
-
-  public class ReferenceFrom : From
-  {
     public ReferenceExpression Name { get; set; }
     public ICollection<TableHint> Hints { get; set; }
-    public BooleanExpression OnClause { get; set; }
-
-    public override string ToString()
-    {
-      return string.Format("(:{2} ({3}) {1}->{0} {4})", 
-        Name,
-        Alias, 
-        Join, 
-        string.Join(", ", Hints), 
-        OnClause != null ? OnClause.ToString() : string.Empty);
-    }
+    public IBooleanExpression OnClause { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 
-  public class SubqueryFrom : From
+  public class SubqueryFrom : IFrom
   {
+    public string Alias { get; set; }
+    public JoinType Join { get; set; }
     public SelectStatement Subquery { get; set; }
-    public BooleanExpression OnClause { get; set; }
-
-    public override string ToString()
-    {
-      return string.Format("(:{2} {1}->{0} {4})", 
-        Subquery, 
-        Alias, 
-        Join, 
-        OnClause != null ? OnClause.ToString() : string.Empty);
-    }
+    public IBooleanExpression OnClause { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 }

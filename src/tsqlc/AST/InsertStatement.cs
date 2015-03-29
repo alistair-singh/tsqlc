@@ -28,12 +28,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using tsqlc.Util;
 
 namespace tsqlc.AST
 {
   public class ValuesRow
   {
-    public ICollection<Expression> Expressions { get; set; }
+    public ICollection<IExpression> Expressions { get; set; }
   }
 
   public class Values
@@ -41,20 +42,30 @@ namespace tsqlc.AST
     public ICollection<ValuesRow> Rows { get; set; }
   }
 
-  public class InsertStatement : TerminatedStatement
+  public interface IInsertStatement : ITerminatedStatement
   {
-    public Expression TopExpression { get; set; }
-    public From Target { get; set; }
-    public ICollection<ReferenceExpression> ColumnSpecification { get; set; }
+    IExpression TopExpression { get; set; }
+    IFrom Target { get; set; }
+    ICollection<ReferenceExpression> ColumnSpecification { get; set; }
   }
 
-  public class SelectInsertStatement : InsertStatement
+  public class SelectInsertStatement : IInsertStatement
   {
+    public IExpression TopExpression { get; set; }
+    public IFrom Target { get; set; }
+    public ICollection<ReferenceExpression> ColumnSpecification { get; set; }
     public SelectStatement SelectStatement { get; set; }
+    public bool HasTerminator { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.visit(this); }
   }
   
-  public class ValuesInsertStatement : InsertStatement
+  public class ValuesInsertStatement : IInsertStatement
   {
+    public IExpression TopExpression { get; set; }
+    public IFrom Target { get; set; }
+    public ICollection<ReferenceExpression> ColumnSpecification { get; set; }
     public Values Values { get; set; }
+    public bool HasTerminator { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.visit(this); }
   }
 }

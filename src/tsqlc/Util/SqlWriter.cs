@@ -47,14 +47,14 @@ namespace tsqlc.Util
       _isNewLine = true;
     }
 
-    public void Append(Statement statement)
+    public void Append(IStatement statement)
     {
       Write(statement);
       WriteLine();
       WriteLine();
     }
 
-    public void AppendRange(IEnumerable<Statement> statements)
+    public void AppendRange(IEnumerable<IStatement> statements)
     {
       foreach (var statement in statements)
         Append(statement);
@@ -62,7 +62,7 @@ namespace tsqlc.Util
 
     #region Statements
 
-    private void Write(Statement statement)
+    private void Write(IStatement statement)
     {
       if (statement is SelectStatement)
         Write(statement as SelectStatement);
@@ -72,8 +72,8 @@ namespace tsqlc.Util
         Write(statement as BlockStatement);
       else if (statement is DeleteStatement)
         Write(statement as DeleteStatement);
-      else if (statement is InsertStatement)
-        Write(statement as InsertStatement);
+      else if (statement is IInsertStatement)
+        Write(statement as IInsertStatement);
       else if (statement is UpdateStatement)
         Write(statement as UpdateStatement);
       else if (statement is WhileStatement)
@@ -138,7 +138,7 @@ namespace tsqlc.Util
       WriteWhereClause(statement.WhereClause);
     }
 
-    private void Write(InsertStatement statement)
+    private void Write(IInsertStatement statement)
     {
       Write("INSERT  ");
       WriteTop(statement.TopExpression);
@@ -212,7 +212,7 @@ namespace tsqlc.Util
       Write(")");
     }
 
-    private void WriteBody(Statement statement)
+    private void WriteBody(IStatement statement)
     {
       if (statement is BlockStatement)
         Write(statement);
@@ -221,7 +221,7 @@ namespace tsqlc.Util
           Write(statement);
     }
 
-    private void WriteTop(Expression expression)
+    private void WriteTop(IExpression expression)
     {
       if (expression == null)
         return;
@@ -231,7 +231,7 @@ namespace tsqlc.Util
       WriteLine();
     }
 
-    private void WriteWhereClause(BooleanExpression expression)
+    private void WriteWhereClause(IBooleanExpression expression)
     {
       if (expression == null)
         return;
@@ -315,7 +315,7 @@ namespace tsqlc.Util
 
     #region Froms
 
-    private void Write(ICollection<From> froms)
+    private void Write(ICollection<IFrom> froms)
     {
       if (froms != null && froms.Any())
       {
@@ -326,7 +326,7 @@ namespace tsqlc.Util
       }
     }
 
-    private void Write(From from)
+    private void Write(IFrom from)
     {
       if (from is SubqueryFrom)
         Write(from as SubqueryFrom);
@@ -368,7 +368,7 @@ namespace tsqlc.Util
       Write(")");
     }
 
-    private void WriteOnClause(BooleanExpression expression)
+    private void WriteOnClause(IBooleanExpression expression)
     {
       if (expression == null)
         return;
@@ -420,7 +420,7 @@ namespace tsqlc.Util
 
     #region Boolean Expressions
 
-    private void Write(BooleanExpression expression)
+    private void Write(IBooleanExpression expression)
     {
       if (expression is BooleanBetweenExpression)
         Write(expression as BooleanBetweenExpression);
@@ -599,7 +599,7 @@ namespace tsqlc.Util
 
     #region Expression
 
-    public void Write(Expression expression)
+    public void Write(IExpression expression)
     {
       if (expression is ConstantExpression)
         Write(expression as ConstantExpression);

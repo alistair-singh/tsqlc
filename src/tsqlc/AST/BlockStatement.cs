@@ -28,11 +28,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using tsqlc.Util;
 
 namespace tsqlc.AST
 {
-  public class BlockStatement : Statement
+  public class BlockStatement : IStatement
   {
-    public ICollection<Statement> Body { get; set; }
+    public ICollection<IStatement> Body { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 }

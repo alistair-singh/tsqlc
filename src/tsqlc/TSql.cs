@@ -37,37 +37,37 @@ namespace tsqlc
 {
   public static class TSql
   {
-    public static IEnumerable<Statement> Parse(this IEnumerable<Token> tokens)
+    public static IEnumerable<IStatement> Parse(this IEnumerable<Token> tokens)
     {
       return new Parser(tokens);
     }
 
-    public static IEnumerable<Statement> Parse(this IEnumerable<char> tokens)
+    public static IEnumerable<IStatement> Parse(this IEnumerable<char> tokens)
     {
       return tokens.Lex().Parse();
     }
 
-    public static IEnumerable<Statement> Parse(Stream stream)
+    public static IEnumerable<IStatement> Parse(Stream stream)
     {
       return Lex(stream).Parse();
     }
 
-    public static IEnumerable<Statement> Parse(TextReader reader)
+    public static IEnumerable<IStatement> Parse(TextReader reader)
     {
       return Lex(reader).Parse();
     }
 
-    public static IEnumerable<Statement> Parse(IEnumerable<byte> buffer)
+    public static IEnumerable<IStatement> Parse(IEnumerable<byte> buffer)
     {
       return Lex(buffer).Parse();
     }
 
-    public static IEnumerable<Statement> Parse(byte[] buffer)
+    public static IEnumerable<IStatement> Parse(byte[] buffer)
     {
       return Lex(buffer).Parse();
     }
 
-    public static IEnumerable<Statement> ParseFile(string path)
+    public static IEnumerable<IStatement> ParseFile(string path)
     {
       return LexFile(path).Parse();
     }
@@ -102,7 +102,7 @@ namespace tsqlc
       return FromBuffer(FromFile(path)).Lex();
     }
 
-    public static void Write(this IEnumerable<Statement> statements, TextWriter writer)
+    public static void Write(this IEnumerable<IStatement> statements, TextWriter writer)
     {
       var sqlWriter = new SqlWriter(writer);
       sqlWriter.AppendRange(statements);

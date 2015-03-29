@@ -31,7 +31,7 @@ using tsqlc.AST;
 
 namespace tsqlc.Parse
 {
-  public class Parser : IEnumerable<Statement>
+  public class Parser : IEnumerable<IStatement>
   {
     private const int ReferenceListInitializationSize = 4;
 
@@ -46,12 +46,12 @@ namespace tsqlc.Parse
         x.Type != TokenType.BlockComment).GetEnumerator();
     }
 
-    public Statement NextStatement()
+    public IStatement NextStatement()
     {
       if (Current == null && !_tokens.MoveNext())
         return null;
 
-      TerminatedStatement statement;
+      ITerminatedStatement statement;
       switch (Current.Type)
       {
         case TokenType.K_SELECT:
@@ -73,7 +73,7 @@ namespace tsqlc.Parse
         case TokenType.K_WHILE:
           return While();
         case TokenType.SemiColon:
-          statement = new TerminatedStatement();
+          statement = new EmptyStatement();
           break;
         default:
           throw Unexpected();
@@ -83,7 +83,7 @@ namespace tsqlc.Parse
       return statement;
     }
 
-    private InsertStatement Insert()
+    private IInsertStatement Insert()
     {
       Match(TokenType.K_INSERT);
       var top = Top();
@@ -134,7 +134,7 @@ namespace tsqlc.Parse
     {
       Match(TokenType.OpenBracket);
 
-      var expression = new List<Expression>();
+      var expression = new List<IExpression>();
       do
         expression.Add(Expression());
       while (Consume(TokenType.Comma));
@@ -232,7 +232,7 @@ namespace tsqlc.Parse
     private BlockStatement Block()
     {
       Match(TokenType.K_BEGIN);
-      var statements = new List<Statement>();
+      var statements = new List<IStatement>();
       while (!CurrentTypeIs(TokenType.K_END))
         statements.Add(NextStatement());
       Match(TokenType.K_END);
@@ -245,7 +245,7 @@ namespace tsqlc.Parse
       var test = BooleanExpression();
       var trueBody = NextStatement();
 
-      Statement falseBody = null;
+      IStatement falseBody = null;
       if (Consume(TokenType.K_ELSE))
         falseBody = NextStatement();
 
@@ -275,7 +275,7 @@ namespace tsqlc.Parse
       };
     }
 
-    private BooleanExpression Where()
+    private IBooleanExpression Where()
     {
       if (Consume(TokenType.K_WHERE))
         return BooleanExpression();
@@ -283,7 +283,7 @@ namespace tsqlc.Parse
       return null;
     }
 
-    private Expression Top()
+    private IExpression Top()
     {
       if (Consume(TokenType.K_TOP))
         return PrimaryExpression();
@@ -291,9 +291,9 @@ namespace tsqlc.Parse
       return null;
     }
 
-    private ICollection<From> FromList()
+    private ICollection<IFrom> FromList()
     {
-      var froms = new List<From>();
+      var froms = new List<IFrom>();
       if (!Consume(TokenType.K_FROM))
         return froms;
 
@@ -335,7 +335,7 @@ namespace tsqlc.Parse
       return froms;
     }
 
-    private From From(JoinType type = JoinType.PRIMARY, bool allowAlias = true,
+    private IFrom From(JoinType type = JoinType.PRIMARY, bool allowAlias = true,
       bool allowOnClause = true, bool requireWithOnTableHints = false)
     {
       if (Consume(TokenType.OpenBracket))
@@ -403,7 +403,7 @@ namespace tsqlc.Parse
       return hints;
     }
 
-    private BooleanExpression OnClause(JoinType type)
+    private IBooleanExpression OnClause(JoinType type)
     {
       switch (type)
       {
@@ -478,13 +478,13 @@ namespace tsqlc.Parse
       return new ExpressionColumn { Expression = expression };
     }
 
-    private BooleanExpression BooleanExpression()
+    private IBooleanExpression BooleanExpression()
     {
       var exp = PrimaryBooleanExpression();
       return BooleanExpression(exp, 1);
     }
 
-    private BooleanExpression BooleanExpression(BooleanExpression left, int minPrecedence)
+    private IBooleanExpression BooleanExpression(IBooleanExpression left, int minPrecedence)
     {
       while (IsBooleanOp())
       {
@@ -499,7 +499,7 @@ namespace tsqlc.Parse
       return left;
     }
 
-    private BooleanExpression PrimaryBooleanExpression()
+    private IBooleanExpression PrimaryBooleanExpression()
     {
       if (Consume(TokenType.K_NOT))
         return new BooleanNotExpresison
@@ -556,7 +556,7 @@ namespace tsqlc.Parse
       return new BooleanComparisonExpression { Left = left, Type = op, Right = right };
     }
 
-    private BooleanExpression IsNullOrNotNull(Expression left)
+    private IBooleanExpression IsNullOrNotNull(IExpression left)
     {
       Match(TokenType.K_IS);
       var isNull = !Consume(TokenType.K_NOT);
@@ -564,7 +564,7 @@ namespace tsqlc.Parse
       return new BooleanNullCheckExpression { IsNull = isNull, Left = left };
     }
 
-    private BooleanExpression BooleanExists()
+    private IBooleanExpression BooleanExists()
     {
       Match(TokenType.K_EXISTS);
       Match(TokenType.OpenBracket);
@@ -573,7 +573,7 @@ namespace tsqlc.Parse
       return new BooleanExistsExpression { Subquery = subquery };
     }
 
-    private BooleanRangeExpression BooleanRange(Expression left, BooleanOperatorType op)
+    private BooleanRangeExpression BooleanRange(IExpression left, BooleanOperatorType op)
     {
       var rangeOp = RangeOperator();
       Match(TokenType.OpenBracket);
@@ -588,7 +588,7 @@ namespace tsqlc.Parse
       };
     }
 
-    private BooleanInExpression BooleanIn(Expression left, bool not = false)
+    private IBooleanInExpression BooleanIn(IExpression left, bool not = false)
     {
       Match(TokenType.K_IN);
       Match(TokenType.OpenBracket);
@@ -599,7 +599,7 @@ namespace tsqlc.Parse
         return new BooleanInSubqueryExpression { Not = not, Left = left, Subquery = subquery };
       }
 
-      var list = new List<Expression>();
+      var list = new List<IExpression>();
       do
         list.Add(Expression());
       while (Consume(TokenType.Comma));
@@ -608,7 +608,7 @@ namespace tsqlc.Parse
       return new BooleanInListExpression { Not = not, Left = left, List = list };
     }
 
-    private BooleanBetweenExpression BooleanBetween(Expression left, bool not = false)
+    private BooleanBetweenExpression BooleanBetween(IExpression left, bool not = false)
     {
       Match(TokenType.K_BETWEEN);
       var first = Expression();
@@ -617,7 +617,7 @@ namespace tsqlc.Parse
       return new BooleanBetweenExpression { Left = left, Not = not, First = first, Second = second };
     }
 
-    private Expression PrimaryExpression()
+    private IExpression PrimaryExpression()
     {
       if (IsConstant())
         return Constant();
@@ -635,7 +635,7 @@ namespace tsqlc.Parse
       }
       else if (Consume(TokenType.OpenBracket))
       {
-        Expression expression;
+        IExpression expression;
         if (CurrentTypeIs(TokenType.K_SELECT))
           expression = new SelectStatementExpression { Statement = Select() };
         else
@@ -653,12 +653,12 @@ namespace tsqlc.Parse
       return new NullExpression();
     }
 
-    private Expression Expression()
+    private IExpression Expression()
     {
       return Expression(PrimaryExpression(), 1);
     }
 
-    private Expression Expression(Expression left, int minPrecedence)
+    private IExpression Expression(IExpression left, int minPrecedence)
     {
       while (IsBinaryOp())
       {
@@ -698,7 +698,7 @@ namespace tsqlc.Parse
     private FunctionCallExpression FunctionCall(ReferenceExpression reference)
     {
       Match(TokenType.OpenBracket);
-      var parameters = new List<Expression>();
+      var parameters = new List<IExpression>();
       if (Consume(TokenType.CloseBracket))
         return new FunctionCallExpression { Function = reference, Parameters = parameters };
 
@@ -976,7 +976,7 @@ namespace tsqlc.Parse
 
     #region IEnumerator<Statement>
 
-    public IEnumerator<Statement> GetEnumerator()
+    public IEnumerator<IStatement> GetEnumerator()
     {
       return new Parser.StatementEnumerator(this);
     }
@@ -990,7 +990,7 @@ namespace tsqlc.Parse
 
     #region StatementEnumerator
 
-    private class StatementEnumerator : IEnumerator<Statement>
+    private class StatementEnumerator : IEnumerator<IStatement>
     {
       private Parser _parser;
 
@@ -999,7 +999,7 @@ namespace tsqlc.Parse
         _parser = parser;
       }
 
-      public Statement Current { get; private set; }
+      public IStatement Current { get; private set; }
 
       public void Dispose() { }
 
