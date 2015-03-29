@@ -73,7 +73,7 @@ namespace tsqlc.Parse
         case TokenType.K_WHILE:
           return While();
         case TokenType.SemiColon:
-          statement = new EmptyStatement();
+          statement = new EmptyStatement { Token = Current };
           break;
         default:
           throw Unexpected();
@@ -162,6 +162,7 @@ namespace tsqlc.Parse
 
     private UpdateStatement Update()
     {
+      var token = Current;
       Match(TokenType.K_UPDATE);
       var top = Top();
 
@@ -175,6 +176,7 @@ namespace tsqlc.Parse
 
       return new UpdateStatement
       {
+        Token = token,
         TopExpression = top,
         Target = target,
         FromList = froms,
@@ -188,11 +190,13 @@ namespace tsqlc.Parse
       var columns = new List<SetExpressionColumn>();
       do
       {
+        var token = Current;
         var reference = ReferenceExpression();
         Match(TokenType.AssignOp);
         var expression = Expression();
         columns.Add(new SetExpressionColumn
         {
+          Token = token,
           Reference = reference,
           Expression = expression
         });
@@ -203,14 +207,16 @@ namespace tsqlc.Parse
 
     private WhileStatement While()
     {
+      var token = Current;
       Match(TokenType.K_WHILE);
       var test = BooleanExpression();
       var body = NextStatement();
-      return new WhileStatement { Test = test, Body = body };
+      return new WhileStatement { Test = test, Body = body, Token = token };
     }
 
     private DeleteStatement Delete()
     {
+      var token = Current;
       Match(TokenType.K_DELETE);
       var top = Top();
 
@@ -222,6 +228,7 @@ namespace tsqlc.Parse
 
       return new DeleteStatement
       {
+        Token = token,
         TopExpression = top,
         Target = target,
         FromList = fromList,
@@ -231,16 +238,18 @@ namespace tsqlc.Parse
 
     private BlockStatement Block()
     {
+      var token = Current;
       Match(TokenType.K_BEGIN);
       var statements = new List<IStatement>();
       while (!CurrentTypeIs(TokenType.K_END))
         statements.Add(NextStatement());
       Match(TokenType.K_END);
-      return new BlockStatement { Body = statements };
+      return new BlockStatement { Body = statements, Token = token };
     }
 
     private IfStatement If()
     {
+      var token = Current;
       Match(TokenType.K_IF);
       var test = BooleanExpression();
       var trueBody = NextStatement();
@@ -251,6 +260,7 @@ namespace tsqlc.Parse
 
       return new IfStatement
       {
+        Token = token,
         Test = test,
         TrueBody = trueBody,
         FalseBody = falseBody
@@ -259,6 +269,7 @@ namespace tsqlc.Parse
 
     private SelectStatement Select()
     {
+      var token = Current;
       Match(TokenType.K_SELECT);
 
       var top = Top();
@@ -268,6 +279,7 @@ namespace tsqlc.Parse
 
       return new SelectStatement
       {
+        Token = token,
         ColumnList = columns,
         WhereClause = whereClause,
         FromList = froms,
@@ -279,7 +291,6 @@ namespace tsqlc.Parse
     {
       if (Consume(TokenType.K_WHERE))
         return BooleanExpression();
-
       return null;
     }
 
@@ -287,7 +298,6 @@ namespace tsqlc.Parse
     {
       if (Consume(TokenType.K_TOP))
         return PrimaryExpression();
-
       return null;
     }
 
@@ -338,6 +348,7 @@ namespace tsqlc.Parse
     private IFrom From(JoinType type = JoinType.PRIMARY, bool allowAlias = true,
       bool allowOnClause = true, bool requireWithOnTableHints = false)
     {
+      var token = Current;
       if (Consume(TokenType.OpenBracket))
       {
         var subquery = Select();
@@ -345,6 +356,7 @@ namespace tsqlc.Parse
         var alias = allowAlias ? TableAlias() : string.Empty;
         return new SubqueryFrom
         {
+          Token = token,
           Join = type,
           Subquery = subquery,
           Alias = alias,
@@ -359,6 +371,7 @@ namespace tsqlc.Parse
         var onClause = allowOnClause ? OnClause(type) : null;
         return new ReferenceFrom
         {
+          Token = token,
           Join = type,
           Name = reference,
           Alias = alias,
@@ -446,36 +459,28 @@ namespace tsqlc.Parse
 
     private IColumn Column()
     {
+      var token = Current;
       if (Consume(TokenType.StarOp))
-        return new StarColumn { };
-
-      //TODO: buggy code dont support it for now, might need to implement back tracking
-      //if (Current != null && Current.Type == TokenType.Identifier || Current.Type == TokenType.VarcharConstant)
-      //{
-      //  var token = Current;
-      //  Consume();
-      //  if (Current != null && Current.Type == TokenType.AssignOp)
-      //  {
-      //    var column = new ExpressionColumn { Alias = token.Character };
-      //    Consume();
-      //    column.Expression = Expression();
-      //    return column;
-      //  }
-      //}
+        return new StarColumn { Token = token };
 
       var expression = Expression();
       var optional = !Consume(TokenType.K_AS);
 
       if (CurrentIs(TokenType.Identifier, TokenType.VarcharConstant).HasValue)
       {
-        var column = new ExpressionColumn { Expression = expression, Alias = Current.Character };
+        var column = new ExpressionColumn
+        {
+          Token = token,
+          Expression = expression,
+          Alias = Current.Character
+        };
         Consume();
         return column;
       }
       else if (!optional)
         throw Expected("Identifier");
 
-      return new ExpressionColumn { Expression = expression };
+      return new ExpressionColumn { Token = token, Expression = expression };
     }
 
     private IBooleanExpression BooleanExpression()
@@ -488,22 +493,25 @@ namespace tsqlc.Parse
     {
       while (IsBooleanOp())
       {
+        var token = Current;
         var type = BooleanOperator();
         var precidence = (int)type / 100;
         var right = PrimaryBooleanExpression();
         if (minPrecedence >= precidence)
           right = BooleanExpression(right, precidence);
 
-        left = new BooleanBinaryExpression { Left = left, Type = type, Right = right };
+        left = new BooleanBinaryExpression { Token = token, Left = left, Type = type, Right = right };
       }
       return left;
     }
 
     private IBooleanExpression PrimaryBooleanExpression()
     {
+      var token = Current;
       if (Consume(TokenType.K_NOT))
         return new BooleanNotExpresison
         {
+          Token = token,
           Right = PrimaryBooleanExpression()
         };
 
@@ -514,7 +522,7 @@ namespace tsqlc.Parse
       {
         var expression = BooleanExpression();
         Match(TokenType.CloseBracket);
-        return new GroupedBooleanExpression { Group = expression };
+        return new GroupedBooleanExpression { Token = token, Group = expression };
       }
 
       var left = Expression();
@@ -553,34 +561,38 @@ namespace tsqlc.Parse
       }
 
       var right = Expression();
-      return new BooleanComparisonExpression { Left = left, Type = op, Right = right };
+      return new BooleanComparisonExpression { Token = token, Left = left, Type = op, Right = right };
     }
 
-    private IBooleanExpression IsNullOrNotNull(IExpression left)
+    private BooleanNullCheckExpression IsNullOrNotNull(IExpression left)
     {
+      var token = Current;
       Match(TokenType.K_IS);
       var isNull = !Consume(TokenType.K_NOT);
       Match(TokenType.K_NULL);
-      return new BooleanNullCheckExpression { IsNull = isNull, Left = left };
+      return new BooleanNullCheckExpression { Token = token, IsNull = isNull, Left = left };
     }
 
-    private IBooleanExpression BooleanExists()
+    private BooleanExistsExpression BooleanExists()
     {
+      var token = Current;
       Match(TokenType.K_EXISTS);
       Match(TokenType.OpenBracket);
       var subquery = Select();
       Match(TokenType.CloseBracket);
-      return new BooleanExistsExpression { Subquery = subquery };
+      return new BooleanExistsExpression { Token = token, Subquery = subquery };
     }
 
     private BooleanRangeExpression BooleanRange(IExpression left, BooleanOperatorType op)
     {
+      var token = Current;
       var rangeOp = RangeOperator();
       Match(TokenType.OpenBracket);
       var subquery = Select();
       Match(TokenType.CloseBracket);
       return new BooleanRangeExpression
       {
+        Token = token,
         Left = left,
         Type = op,
         RangeType = rangeOp,
@@ -590,13 +602,14 @@ namespace tsqlc.Parse
 
     private IBooleanInExpression BooleanIn(IExpression left, bool not = false)
     {
+      var token = Current;
       Match(TokenType.K_IN);
       Match(TokenType.OpenBracket);
       if (CurrentTypeIs(TokenType.K_SELECT))
       {
         var subquery = Select();
         Match(TokenType.CloseBracket);
-        return new BooleanInSubqueryExpression { Not = not, Left = left, Subquery = subquery };
+        return new BooleanInSubqueryExpression { Token = token, Not = not, Left = left, Subquery = subquery };
       }
 
       var list = new List<IExpression>();
@@ -605,20 +618,22 @@ namespace tsqlc.Parse
       while (Consume(TokenType.Comma));
 
       Match(TokenType.CloseBracket);
-      return new BooleanInListExpression { Not = not, Left = left, List = list };
+      return new BooleanInListExpression { Token = token, Not = not, Left = left, List = list };
     }
 
     private BooleanBetweenExpression BooleanBetween(IExpression left, bool not = false)
     {
+      var token = Current;
       Match(TokenType.K_BETWEEN);
       var first = Expression();
       Match(TokenType.K_AND);
       var second = Expression();
-      return new BooleanBetweenExpression { Left = left, Not = not, First = first, Second = second };
+      return new BooleanBetweenExpression { Token = token, Left = left, Not = not, First = first, Second = second };
     }
 
     private IExpression PrimaryExpression()
     {
+      var token = Current;
       if (IsConstant())
         return Constant();
       else if (IsUnaryOp())
@@ -637,9 +652,9 @@ namespace tsqlc.Parse
       {
         IExpression expression;
         if (CurrentTypeIs(TokenType.K_SELECT))
-          expression = new SelectStatementExpression { Statement = Select() };
+          expression = new SelectStatementExpression { Token = token, Statement = Select() };
         else
-          expression = new GroupedExpression { Group = Expression() };
+          expression = new GroupedExpression { Token = token, Group = Expression() };
 
         Match(TokenType.CloseBracket);
         return expression;
@@ -649,8 +664,9 @@ namespace tsqlc.Parse
 
     private NullExpression NullExpression()
     {
+      var token = Current;
       Match(TokenType.K_NULL);
-      return new NullExpression();
+      return new NullExpression { Token = token };
     }
 
     private IExpression Expression()
@@ -662,19 +678,21 @@ namespace tsqlc.Parse
     {
       while (IsBinaryOp())
       {
+        var token = Current;
         var type = BinaryOperator();
         var precidence = (int)type / 100;
         var right = PrimaryExpression();
         if (minPrecedence >= precidence)
           right = Expression(right, precidence);
 
-        left = new BinaryOperationExpression { Left = left, Type = type, Right = right };
+        left = new BinaryOperationExpression { Token = token, Left = left, Type = type, Right = right };
       }
       return left;
     }
 
     private ReferenceExpression ReferenceExpression()
     {
+      var token = Current;
       var parts = new List<string>(ReferenceListInitializationSize);
       do
       {
@@ -692,15 +710,16 @@ namespace tsqlc.Parse
         else
           throw Unexpected();
       } while (Consume(TokenType.ReferenceOp));
-      return new ReferenceExpression { IdentifierParts = parts };
+      return new ReferenceExpression { Token = token, IdentifierParts = parts };
     }
 
     private FunctionCallExpression FunctionCall(ReferenceExpression reference)
     {
+      var token = Current;
       Match(TokenType.OpenBracket);
       var parameters = new List<IExpression>();
       if (Consume(TokenType.CloseBracket))
-        return new FunctionCallExpression { Function = reference, Parameters = parameters };
+        return new FunctionCallExpression { Token = token, Function = reference, Parameters = parameters };
 
       do
         parameters.Add(Expression());
@@ -712,6 +731,7 @@ namespace tsqlc.Parse
 
     private UnaryExpression UnaryOp()
     {
+      var token = Current;
       UnaryType type;
       var tokenType = CurrentIs(TokenType.AddOp, TokenType.SubtractOp, TokenType.BitwiseNotOp);
 
@@ -733,11 +753,12 @@ namespace tsqlc.Parse
           throw Unexpected();
       }
       Consume();
-      return new UnaryExpression { Type = type, Right = PrimaryExpression() };
+      return new UnaryExpression { Token = token, Type = type, Right = PrimaryExpression() };
     }
 
     private ConstantExpression Constant()
     {
+      var token = Current;
       //TODO: Record precision and scale of numeric, length of character data
       var type = CurrentIs(TokenType.IntConstant, TokenType.BigIntConstant, TokenType.FloatConstant,
         TokenType.NumericConstant, TokenType.NvarcharConstant, TokenType.RealConstant, TokenType.VarcharConstant);
@@ -774,6 +795,7 @@ namespace tsqlc.Parse
       }
 
       Consume();
+      expression.Token = token;
       return expression;
     }
 

@@ -23,11 +23,8 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using tsqlc.Parse;
 using tsqlc.Util;
 
 namespace tsqlc.AST
@@ -53,6 +50,7 @@ namespace tsqlc.AST
 
   public class SelectInsertStatement : IInsertStatement
   {
+    public Token Token { get; set; }
     public IExpression TopExpression { get; set; }
     public IFrom Target { get; set; }
     public ICollection<ReferenceExpression> ColumnSpecification { get; set; }
@@ -63,6 +61,7 @@ namespace tsqlc.AST
   
   public class ValuesInsertStatement : IInsertStatement
   {
+    public Token Token { get; set; }
     public IExpression TopExpression { get; set; }
     public IFrom Target { get; set; }
     public ICollection<ReferenceExpression> ColumnSpecification { get; set; }

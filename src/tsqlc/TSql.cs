@@ -111,11 +111,7 @@ namespace tsqlc
     public static void Write(this IEnumerable<IStatement> statements, TextWriter writer)
     {
       var sqlWriter = new SqlWriter(writer);
-      statements.DoBetween(n => n.Accept(sqlWriter), (n, p) =>
-      {
-        writer.WriteLine();
-        writer.WriteLine();
-      });
+      sqlWriter.Write(statements);
     }
 
     public static string WriteString(this IEnumerable<IStatement> statements)

@@ -28,12 +28,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using tsqlc.Parse;
 using tsqlc.Util;
 
 namespace tsqlc.AST
 {
   public class WhileStatement : IStatement
   {
+    public Token Token { get; set; }
     public IBooleanExpression Test { get; set; }
     public IStatement Body { get; set; }
     public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }

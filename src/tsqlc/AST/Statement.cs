@@ -1,4 +1,5 @@
-﻿/*
+﻿using tsqlc.Parse;
+/*
 Copyright (c) 2015, Alistair Singh
 All rights reserved.
 
@@ -28,6 +29,7 @@ namespace tsqlc.AST
 {
   public interface IStatement : ITreeVisitable
   {
+    Token Token { get; set; }
   }
 
   public interface ITerminatedStatement : IStatement
@@ -37,6 +39,7 @@ namespace tsqlc.AST
 
   public class EmptyStatement : ITerminatedStatement
   {
+    public Token Token { get; set; }
     public bool HasTerminator { get; set; }
     public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }

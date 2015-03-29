@@ -29,113 +29,99 @@ using tsqlc.Util;
 
 namespace tsqlc.AST
 {
-  public interface IExpression : ITreeVisitable 
+  public interface IBooleanExpression : ITreeVisitable 
   {
     Token Token { get; set; }
   }
 
-  public enum SqlType
-  {
-    Float, Int, BigInt, Real, Numeric, Varchar, NVarchar
-  }
-
-  public enum UnaryType
-  {
-    Positive, Negative, BitwiseNot
-  }
-
-  public enum BinaryType
-  {
-    Multiply = 201,
-    Modulus = 202,
-    Division = 203,
-    Addition = 101,
-    Subtraction = 102,
-    BitwiseAnd = 103,
-    BitwiseXor = 104,
-    BitwiseOr = 105
-  }
-
-  public enum BooleanOperatorType
-  {
-    Equals,
-    LessThan,
-    GreaterThan,
-    LessThanOrEqual,
-    GreaterThanOrEqual,
-    NotEqual,
-    NotGreaterThan,
-    NotLessThan,
-    Like,
-    Or = 101,
-    And = 201
-  }
-
-  public enum RangeOperatorType
-  {
-    All, Any, Some
-  }
-
-  public class UnaryExpression : IExpression
+  public class BooleanNotExpresison : IBooleanExpression
   {
     public Token Token { get; set; }
-    public UnaryType Type { get; set; }
-    public IExpression Right { get; set; }
-
+    public IBooleanExpression Right { get; set; }
     public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 
-  public class GroupedExpression : IExpression
+  public interface IBooleanInExpression : IBooleanExpression
   {
-    public Token Token { get; set; }
-    public IExpression Group { get; set; }
-    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
+    IExpression Left { get; set; }
+    bool Not { get; set; }
   }
 
-  public class NullExpression : IExpression
-  {
-    public Token Token { get; set; }
-    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
-  }
-
-  public class ConstantExpression : IExpression
-  {
-    public Token Token { get; set; }
-    public SqlType Type { get; set; }
-    public object Value { get; set; }
-    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
-  }
-
-  public class SelectStatementExpression : IExpression
-  {
-    public Token Token { get; set; }
-    public SelectStatement Statement { get; set; }
-    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
-  }
-
-  public class FunctionCallExpression : IExpression
-  {
-    public Token Token { get; set; }
-    public ReferenceExpression Function { get; set; }
-    public ICollection<IExpression> Parameters { get; set; }
-    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
-  }
-
-  public class BinaryOperationExpression : IExpression
+  public class BooleanInSubqueryExpression : IBooleanInExpression
   {
     public Token Token { get; set; }
     public IExpression Left { get; set; }
-    public BinaryType Type { get; set; }
+    public bool Not { get; set; }
+    public SelectStatement Subquery { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
+  }
+
+  public class BooleanExistsExpression : IBooleanExpression
+  {
+    public Token Token { get; set; }
+    public SelectStatement Subquery { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
+  }
+
+  public class BooleanInListExpression : IBooleanInExpression
+  {
+    public Token Token { get; set; }
+    public IExpression Left { get; set; }
+    public bool Not { get; set; }
+    public ICollection<IExpression> List { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
+  }
+
+  public class BooleanBetweenExpression : IBooleanExpression
+  {
+    public Token Token { get; set; }
+    public IExpression Left { get; set; }
+    public bool Not { get; set; }
+    public IExpression First { get; set; }
+    public IExpression Second { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
+  }
+
+  public class GroupedBooleanExpression : IBooleanExpression
+  {
+    public Token Token { get; set; }
+    public IBooleanExpression Group { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
+  }
+
+  public class BooleanRangeExpression : IBooleanExpression
+  {
+    public Token Token { get; set; }
+    public IExpression Left { get; set; }
+    public BooleanOperatorType Type { get; set; }
+    public RangeOperatorType RangeType { get; set; }
+    public SelectStatement Subquery { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
+  }
+
+  public class BooleanNullCheckExpression : IBooleanExpression
+  {
+    public Token Token { get; set; }
+    public IExpression Left { get; set; }
+    public bool IsNull { get; set; }
+    public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
+  }
+
+  public class BooleanComparisonExpression : IBooleanExpression
+  {
+    public Token Token { get; set; }
+    public IExpression Left { get; set; }
+    public BooleanOperatorType Type { get; set; }
     public IExpression Right { get; set; }
     public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 
-  public class ReferenceExpression : IExpression
+  public class BooleanBinaryExpression : IBooleanExpression
   {
     public Token Token { get; set; }
-    public ICollection<string> IdentifierParts;
-    public string Identifier { get { return string.Join(".", IdentifierParts ?? new string[0]); } }
+    public IBooleanExpression Left { get; set; }
+    public BooleanOperatorType Type { get; set; }
+    public IBooleanExpression Right { get; set; }
     public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
-
 }

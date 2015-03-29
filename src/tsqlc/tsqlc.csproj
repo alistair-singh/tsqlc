@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AST\BlockStatement.cs" />
+    <Compile Include="AST\BooleanExpression.cs" />
     <Compile Include="AST\Column.cs" />
     <Compile Include="AST\DeleteStatement.cs" />
     <Compile Include="AST\Expression.cs" />

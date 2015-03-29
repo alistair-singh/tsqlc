@@ -47,6 +47,16 @@ namespace tsqlc.Util
       _isNewLine = true;
     }
 
+    public void Write(IEnumerable<IStatement> statements)
+    {
+      foreach(var statement in statements)
+      {
+        statement.Accept(this);
+        WriteLine();
+        WriteLine();
+      }
+    }
+
     #region Statements
 
     public void Visit(BlockStatement statement)

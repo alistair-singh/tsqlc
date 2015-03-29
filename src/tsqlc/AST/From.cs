@@ -55,12 +55,14 @@ namespace tsqlc.AST
 
   public interface IFrom : ITreeVisitable
   {
+    Token Token { get; set; }
     string Alias { get; set; }
     JoinType Join { get; set; }
   }
 
   public class ReferenceFrom : IFrom
   {
+    public Token Token { get; set; }
     public string Alias { get; set; }
     public JoinType Join { get; set; }
     public ReferenceExpression Name { get; set; }
@@ -71,6 +73,7 @@ namespace tsqlc.AST
 
   public class SubqueryFrom : IFrom
   {
+    public Token Token { get; set; }
     public string Alias { get; set; }
     public JoinType Join { get; set; }
     public SelectStatement Subquery { get; set; }

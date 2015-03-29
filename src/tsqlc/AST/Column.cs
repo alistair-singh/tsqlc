@@ -23,20 +23,20 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
+using tsqlc.Parse;
 using tsqlc.Util;
 
 namespace tsqlc.AST
 {
-  public interface IColumn : ITreeVisitable { }
+  public interface IColumn : ITreeVisitable
+  {
+    Token Token { get; set; }
+  }
 
   //TODO: Not sure if this needs to be a Column
   public class SetExpressionColumn : IColumn
   {
+    public Token Token { get; set; }
     public ReferenceExpression Reference { get; set; }
     public IExpression Expression { get; set; }
     public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
@@ -44,12 +44,14 @@ namespace tsqlc.AST
 
   public class StarColumn : IColumn
   {
+    public Token Token { get; set; }
     public string TableAlias { get; set; }
     public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
   }
 
   public class ExpressionColumn : IColumn
   {
+    public Token Token { get; set; }
     public IExpression Expression { get; set; }
     public string Alias { get; set; }
     public void Accept(ITreeVisitor visitor) { visitor.Visit(this); }
