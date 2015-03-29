@@ -15,6 +15,7 @@ namespace tsqlc.Tests
     //TODO: Test where clause
     //TODO: Test expression parsing
     //TODO: Test From clause
+    //TODO: Test token references
 
     [TestMethod]
     public void EmptyInputYieldsNoTokens()

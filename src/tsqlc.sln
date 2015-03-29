@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tsqlc", "tsqlc\tsqlc.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tsqlc.Tests", "tsqlc.Tests\tsqlc.Tests.csproj", "{B355F590-A318-4D1D-85D9-5017A5E0247B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Samples.Search", "..\samples\Samples.Search\Samples.Search.csproj", "{8330C447-496A-49F5-B9A7-5DB17AA1FC60}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{B355F590-A318-4D1D-85D9-5017A5E0247B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B355F590-A318-4D1D-85D9-5017A5E0247B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B355F590-A318-4D1D-85D9-5017A5E0247B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8330C447-496A-49F5-B9A7-5DB17AA1FC60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8330C447-496A-49F5-B9A7-5DB17AA1FC60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8330C447-496A-49F5-B9A7-5DB17AA1FC60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8330C447-496A-49F5-B9A7-5DB17AA1FC60}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
