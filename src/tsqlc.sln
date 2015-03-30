@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample.Hashing", "..\sample
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample.CodeAnalysis", "..\samples\Sample.CodeAnalysis\Sample.CodeAnalysis.csproj", "{9A5753A3-363A-48E2-9C91-A826D65FAB5B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample.Refactor", "..\samples\Sample.Refactor\Sample.Refactor.csproj", "{365BA832-EC3C-489C-AB1E-68E29F480E5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample.ASTSerialize", "..\samples\Sample.ASTSerialize\Sample.ASTSerialize.csproj", "{01527EF6-4895-46FD-961A-CD873387CFE3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +45,14 @@ Global
 		{9A5753A3-363A-48E2-9C91-A826D65FAB5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A5753A3-363A-48E2-9C91-A826D65FAB5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9A5753A3-363A-48E2-9C91-A826D65FAB5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{365BA832-EC3C-489C-AB1E-68E29F480E5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{365BA832-EC3C-489C-AB1E-68E29F480E5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{365BA832-EC3C-489C-AB1E-68E29F480E5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{365BA832-EC3C-489C-AB1E-68E29F480E5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01527EF6-4895-46FD-961A-CD873387CFE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01527EF6-4895-46FD-961A-CD873387CFE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01527EF6-4895-46FD-961A-CD873387CFE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01527EF6-4895-46FD-961A-CD873387CFE3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -49,5 +61,7 @@ Global
 		{8330C447-496A-49F5-B9A7-5DB17AA1FC60} = {3CE09111-08D6-43FE-9F9E-54270385C96B}
 		{9ECA10F7-BE6B-41BF-A563-F70AA62DDFAF} = {3CE09111-08D6-43FE-9F9E-54270385C96B}
 		{9A5753A3-363A-48E2-9C91-A826D65FAB5B} = {3CE09111-08D6-43FE-9F9E-54270385C96B}
+		{365BA832-EC3C-489C-AB1E-68E29F480E5E} = {3CE09111-08D6-43FE-9F9E-54270385C96B}
+		{01527EF6-4895-46FD-961A-CD873387CFE3} = {3CE09111-08D6-43FE-9F9E-54270385C96B}
 	EndGlobalSection
 EndGlobal

@@ -31,7 +31,8 @@ namespace Sample.CodeAnalysis
           using (Benchmark.Start("parse"))
             ast = TSql.ParseFile("Test.sql").ToList();
 
-          Analyze(ast);
+          using (Benchmark.Start("analyze"))
+            Analyze(ast);
         }
         catch (Exception e)
         {
