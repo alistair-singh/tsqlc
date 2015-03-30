@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -37,7 +38,8 @@ namespace Sample.ASTSerialize
 
           string json;
           using (Benchmark.Start("serialize"))
-            json = (JsonConvert.SerializeObject(ast, Formatting.Indented));
+            json = (JsonConvert.SerializeObject(ast, Formatting.Indented,
+                    new JsonConverter[] { new StringEnumConverter() }));
 
           using (Benchmark.Start("write"))
             File.WriteAllText("ast.out.json", json);
