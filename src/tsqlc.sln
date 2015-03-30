@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Samples.Search", "..\sample
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{3CE09111-08D6-43FE-9F9E-54270385C96B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample.Hashing", "..\samples\Samples.Hashing\Sample.Hashing.csproj", "{9ECA10F7-BE6B-41BF-A563-F70AA62DDFAF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,11 +31,16 @@ Global
 		{8330C447-496A-49F5-B9A7-5DB17AA1FC60}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8330C447-496A-49F5-B9A7-5DB17AA1FC60}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8330C447-496A-49F5-B9A7-5DB17AA1FC60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9ECA10F7-BE6B-41BF-A563-F70AA62DDFAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9ECA10F7-BE6B-41BF-A563-F70AA62DDFAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9ECA10F7-BE6B-41BF-A563-F70AA62DDFAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9ECA10F7-BE6B-41BF-A563-F70AA62DDFAF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{8330C447-496A-49F5-B9A7-5DB17AA1FC60} = {3CE09111-08D6-43FE-9F9E-54270385C96B}
+		{9ECA10F7-BE6B-41BF-A563-F70AA62DDFAF} = {3CE09111-08D6-43FE-9F9E-54270385C96B}
 	EndGlobalSection
 EndGlobal
