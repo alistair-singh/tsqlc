@@ -33,7 +33,7 @@ using tsqlc.AST;
 
 namespace tsqlc.Util
 {
-  //TODO: Implement with visitor pattern
+  //TODO: Implement using TreeVisitor to walk tree
   public class SqlWriter : ITreeVisitor
   {
     private TextWriter _writer;

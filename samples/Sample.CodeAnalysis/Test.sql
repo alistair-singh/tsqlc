@@ -21,3 +21,10 @@ WHERE	t.Name = 'Person with a Name'
 SELECT	  Name
 		  ,Age
 FROM	  tb_Account 
+
+DELETE	  t
+FROM    tb_test1 t
+		left join tb_test2 b
+			ON t.AccountID = b.AccountID
+WHERE	t.col1 = 'some string'
+		AND b.col2 > 0
