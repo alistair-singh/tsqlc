@@ -5,7 +5,7 @@ using tsqlc;
 using tsqlc.AST;
 using tsqlc.Util;
 
-namespace Samples.Search
+namespace Sample.Search
 {
   class Program
   {
